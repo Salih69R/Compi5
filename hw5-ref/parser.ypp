@@ -1,0 +1,533 @@
+%{
+    #include <iostream>
+    #include <string>
+	#include <stdio.h>
+	#include "output.hpp"
+	#include "SymTable.h"
+    #include "auxiliary.h"
+    #include "bp.hpp"
+	#include <stack>
+	#include <list>
+	using namespace std;
+	using namespace output;
+	string itos1(int num);
+	string toType(string t);
+    int getSize(string t);
+	void arr(string name, string type, int n);
+	void arrF(string name, string type, int n);
+	stack<SymTable*> tables;
+	stack<int> offsets;
+	stack<vector<string>*> arg_stack;
+    stack<Func*> TmpFuncs;
+    stack<vector<int> > breaks;
+	int fOff;
+	bool mis;
+	Func* tmpF;
+	Var* tmpV;
+    Gen a;
+	string methodName;
+	vector<string> args;
+	extern int yylineno;
+	int yylex();
+	void yyerror(const char*);
+%}
+
+
+%token VOID
+%token INT
+%token BYTE
+%token B
+%token BOOL
+%left  OR
+%left  AND
+%right NOT
+%token TRUE
+%token FALSE
+%token RETURN
+%token IF
+%token WHILE
+%token BREAK
+%token SC
+%token COMMA
+%right LPAREN
+%nonassoc  RPAREN
+%token LBRACE
+%token RBRACE
+%token LBRACK
+%token RBRACK
+%right ASSIGN 
+%left  RELOP
+%left  ADDBIN
+%left  MULBIN
+%token ID
+%token NUM
+%token STRING
+%nonassoc  ELSE
+
+
+
+%%
+
+Program:		Funcs{ tmpF = tables.top()->findF("main");
+                        if(tmpF==NULL || tmpF->args.size()!=0 || tmpF->ret.compare("VOID")!=0){
+                            errorMainMissing();
+                            exit(0);
+                        }
+}
+;
+
+Funcs:			/*epsilon*/
+				| FuncDecl Funcs
+;
+
+FuncDecl:		RetType ID {
+                    if(tables.top()->findF($2->name) != NULL){
+                        errorDef(yylineno,$2->name); exit(0);
+                    }
+                    tables.push(new SymTable(tables.top()));
+                    methodName = $2->name;
+
+                    a.openGen();
+                    a.funcDecGen($2->name);
+                }
+                LPAREN Formals RPAREN{
+                    tables.top()->parent->insertF($2->name, args, $1->name);
+                    tables.top()->function = &tables.top()->parent->funcs[tables.top()->parent->funcs.size()-1];
+                    tables.top()->parent->funcs[tables.top()->parent->funcs.size()-1].offVar = tables.top()->vars;
+                    offsets.push(offsets.top());
+                    args.clear(); fOff = -1;
+                }
+                LBRACE Statements RBRACE CLOSE{
+                    a.funcEndGen($2->name);
+                }
+;
+
+RetType:		Type {$$ = $1;}
+				| VOID {$$ = new Var("VOID");}
+;
+
+Formals:		/*epsilon*/
+				| FormalsList
+;
+				
+FormalsList:	FormalDecl
+				|FormalDecl COMMA FormalsList
+;
+
+FormalDecl:		Type ID {
+                if($2->name == methodName){
+                    errorDef(yylineno,$2->name);
+                    exit(0);
+                }
+                    tables.top()->insertV($2->name, $1->name, fOff);
+                    fOff--; args.push_back($1->name);
+                }
+				| Type ID LBRACK NUM RBRACK{
+                    if($2->name == methodName){
+                    errorDef(yylineno,$2->name);
+                    exit(0);
+                    }
+				    arrF($2->name, $1->name, $4->size);
+				}
+
+				| Type ID LBRACK NUM B RBRACK{
+				    if($2->name == methodName){
+                          errorDef(yylineno,$2->name);
+                          exit(0);
+                    }
+                    if(!($4->size >= 0 && $4->size < 256)){
+                          errorByteTooLarge(yylineno, itos1($4->size)); // $4 instead :)
+                          exit(0);
+                    }
+                    arrF($2->name, $1->name, $4->size);
+				}
+;
+
+Statements:		Statement
+				| Statements Statement
+;
+
+Statement:		LBRACE OPEN Statements RBRACE CLOSE;
+				| Type ID SC {
+                    tables.top()->insertV($2->name, $1->name, offsets.top()); offsets.top()++;//$2 $1
+
+                    a.idCreatGen(1);
+				}
+				| Type ID ASSIGN Exp SC {
+                    int offset = offsets.top();
+				    tables.top()->insertV($2->name, $1->name, offset); offsets.top()++;//$2, $1,
+                    if(($1->name != $4->name) && ($1->name != "INT" ||$4->name != "BYTE"))
+                    {errorMismatch(yylineno); exit(0);}
+
+                    if($1->name != "BOOL"){ a.idCreatNGen(1, $4->reg);}
+                    else{ a.idCreatBGen($4->truelist, $4->falselist);}
+				}
+				| Type ID LBRACK NUM RBRACK SC{
+				    arr($2->name, $1->name, $4->size);
+
+                    a.idCreatGen($4->size);
+				}
+				| Type ID LBRACK NUM B RBRACK SC{
+                    if(!($4->size >= 0 && $4->size < 256)){
+                          errorByteTooLarge(yylineno, itos1($4->size)); // $4 instead :)
+                          exit(0);
+                    }
+                    arr($2->name, $1->name, $4->size);
+
+                    a.idCreatGen($4->size);
+				}
+				| ID ASSIGN Exp SC{
+				    Var* tmp = tables.top()->findV($1->name);
+				    if(tmp == NULL || tmp->f){errorUndef(yylineno,$1->name); exit(0);}
+                    if((tmp->type != $3->name) && (tmp->type != "INT" || $3->name != "BYTE"))
+                    {errorMismatch(yylineno); exit(0);}
+
+                    if(tmp->type != "BOOL"){ a.idAssignNGen(tmp->size, $3->reg, a.idGetGen(tmp->offset, false, tmp->size), tmp->offset, $3->offset, tmp->size != 0);}
+                    else{ a.idAssignBGen(tmp->offset, $3->truelist, $3->falselist);}
+				}
+				| ID LBRACK Exp RBRACK ASSIGN Exp SC{
+				    Var* tmp = tables.top()->findV($1->name);
+				    if(tmp == NULL || tmp->f){errorUndef(yylineno,$1->name); exit(0);}//$1
+                    if(($3->name != "INT" && $3->name != "BYTE") || tmp->size == 0 || ((toType(tmp->type) != $6->name) && (toType(tmp->type) != "INT" ||$6->name != "BYTE")))
+                    {
+					errorMismatch(yylineno); exit(0);}
+
+                    if(toType(tmp->type) != "BOOL"){ a.idAssignNGen(tmp->size, $6->reg, a.idGetGen(tmp->offset, false, tmp->size, $3->reg));}
+                    else{
+                            a.idAssignBGen(tmp->offset, $6->truelist, $6->falselist, tmp->size, $3->reg);}
+                }
+				| Call SC
+				| RETURN SC{
+				    if((tables.top()->function->ret).compare("VOID")!=0){
+                        errorMismatch(yylineno);
+                        exit(0);
+				    }
+                    a.retGen("");
+				}
+				| RETURN Exp SC{
+				    if((tables.top()->function->ret).compare($2->name)!=0){
+                        if(!(tables.top()->function->ret=="INT" && $2->name=="BYTE")){
+                            errorMismatch(yylineno);
+                            exit(0);
+                        }
+                    }
+
+                    if($2->name != "BOOL") a.retGen($2->reg);
+                    else a.retBoolGen($2->truelist, $2->falselist);
+				}
+				| IF LPAREN BoolExp M RPAREN OPEN Statement CLOSE{
+                    CodeBuffer::instance().bpatch($3->truelist, $4->name);
+                    CodeBuffer::instance().bpatch($3->falselist, CodeBuffer::instance().genLabel());
+                }
+				| IF LPAREN BoolExp M RPAREN OPEN Statement CLOSE ELSE L M OPEN Statement CLOSE{
+                    CodeBuffer::instance().bpatch($3->truelist, $4->name);
+                    CodeBuffer::instance().bpatch($3->falselist,$11->name);
+                    CodeBuffer::instance().bpatch($10->truelist, CodeBuffer::instance().genLabel());
+                }
+				| WHILE LPAREN M BoolExp M RPAREN OPEN{
+				    tables.top()->isWhile = true;
+                    vector<int> aux =  vector<int>();
+                    breaks.push(aux);
+                    CodeBuffer::instance().bpatch($4->truelist, $5->name);
+				 }
+				 Statement CLOSE{
+                     emit("j " + $3->name);
+                     CodeBuffer::instance().bpatch(CodeBuffer::instance().merge($4->falselist,breaks.top()),CodeBuffer::instance().genLabel());
+                     breaks.pop();
+                 }
+				| BREAK SC {if(!tables.top()->isWhile){
+				        errorUnexpectedBreak(yylineno);
+				        exit(0);
+				    }
+                    a.breakGen();
+                    vector<int> aux = CodeBuffer::instance().merge(breaks.top(),CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j ")));
+                    breaks.pop();
+                    breaks.push(aux);
+				}
+;
+
+Call:			ID LPAREN{  arg_stack.push(new vector<string>());
+                            TmpFuncs.push(tables.top()->findF($1->name)); // $1 ID
+                            if(TmpFuncs.top() == NULL){
+                                errorUndefFunc(yylineno, $1->name); // Should be $1 instead :)
+                                exit(0);
+                            }
+
+                            a.callSetupGen(-(TmpFuncs.top()->offVar[TmpFuncs.top()->offVar.size()-1].offset));}
+                        ExpList RPAREN{
+                            TmpFuncs.top()->isArg(arg_stack.top());
+                            $$ = new Var(TmpFuncs.top()->ret);
+
+                            a.callJumpDestroyGen($1->name, -(TmpFuncs.top()->offVar[TmpFuncs.top()->offVar.size()-1].offset));
+                            arg_stack.pop();
+                            TmpFuncs.pop();
+                }
+				| ID LPAREN{    arg_stack.push(new vector<string>());
+                                TmpFuncs.push(tables.top()->findF($1->name)); // $1 ID
+                                if(TmpFuncs.top() == NULL){
+                                    errorUndefFunc(yylineno, $1->name); // Should be $1 instead :)
+                                    exit(0);
+                                }
+
+                                a.callSetupGen(0);}
+                    RPAREN{
+                                TmpFuncs.top()->isArg(arg_stack.top());
+                                $$ = new Var(TmpFuncs.top()->ret);
+
+                                a.callJumpDestroyGen($1->name, 0);
+                                arg_stack.pop();
+                                TmpFuncs.pop();
+                 }
+;
+
+ExpList:		Exp{
+                    arg_stack.top()->push_back($1->name);
+//                    cout << TmpFuncs.top()->offVar[arg_stack.top()->size()-1].offset << endl;
+                    if($1->name != "BOOL") a.pushNumArgGen(TmpFuncs.top()->offVar[arg_stack.top()->size()-1].offset, $1->reg, $1->size, $1->offset);
+                    else a.pushBoolArgGen(TmpFuncs.top()->offVar[arg_stack.top()->size()-1].offset, $1->truelist, $1->falselist);
+                }
+				| Exp COMMA{    arg_stack.top()->push_back($1->name);
+
+                                if($1->name != "BOOL") a.pushNumArgGen(TmpFuncs.top()->offVar[arg_stack.top()->size()-1].offset, $1->reg, $1->size, $1->offset);
+                                else a.pushBoolArgGen(TmpFuncs.top()->offVar[arg_stack.top()->size()-1].offset, $1->truelist, $1->falselist);
+                            }ExpList
+;
+
+Type:			INT {$$ = new Var("INT");
+                    }
+                | BYTE {$$=new Var("BYTE");
+                }
+                | BOOL {$$=new Var("BOOL");
+                 }
+
+;
+
+Exp:			LPAREN Exp RPAREN{
+                    $$=$2;
+                }
+				| ID LBRACK Exp RBRACK{
+                    Var* v = tables.top()->findV($1->name); // Should be $1 instead :)
+                    if(v==NULL || v->f){
+                        errorUndef(yylineno,$1->name); // Should be $1 instead :)
+                        exit(0);
+                    }
+                    if(($3->name != "INT" && $3->name != "BYTE") || v->size == 0){
+                        errorMismatch(yylineno); exit(0);
+                    }
+                    $$ = new Var(toType(v->type));
+                    if($$->name != "BOOL"){$$->reg = a.idGetGen(v->offset, true, v->size, $3->reg);}
+                    else{ a.idBoolGetGen(v->offset, $$->truelist, $$->falselist, $3->reg, v->size);}
+				}
+				| Exp MULBIN Exp{
+                    if(($1->name != "INT" && $1->name !="BYTE") || ($3->name != "INT" && $3->name != "BYTE")){
+                        errorMismatch(yylineno);
+                        exit(0);
+                    }
+                    if($1->name == "BYTE" && $3->name == "BYTE"){
+                        $$ = new Var("BYTE");
+                        $$->reg = a.arithmeticGen($1->reg,$2->name,$3->reg,false);
+                    }
+                    else{
+                        $$= new Var("INT");
+                        $$->reg = a.arithmeticGen($1->reg,$2->name,$3->reg,true);
+                    }
+				}
+                | Exp ADDBIN Exp{
+                    if(($1->name != "INT" && $1->name !="BYTE") || ($3->name != "INT" && $3->name != "BYTE")){
+                        errorMismatch(yylineno);
+                        exit(0);
+                    }
+                    if($1->name == "BYTE" && $3->name == "BYTE"){
+                        $$ = new Var("BYTE");
+                        $$->reg = a.arithmeticGen($1->reg,$2->name,$3->reg,false);
+                    }
+                    else{
+                        $$= new Var("INT");
+                        $$->reg = a.arithmeticGen($1->reg,$2->name,$3->reg,true);
+                    }
+                }
+				| ID{
+				    Var* v = tables.top()->findV($1->name); // Should be $1 instead :)
+				    if(v==NULL || v->f){
+				        errorUndef(yylineno,$1->name); // Should be $1 instead :)
+                        exit(0);
+				    }
+				    $$ = new Var(v->type);
+                    $$->size = v->size;
+                    $$->offset = v->offset;
+                    if(v->type != "BOOL"){ $$->reg = a.idGetGen(v->offset, v->size == 0, v->size);}
+                    else{ a.idBoolGetGen(v->offset, $$->truelist, $$->falselist);}
+				}
+				| Call{
+				    if($1->name == "VOID"){errorMismatch(yylineno);exit(0);}
+				     $$=new Var($1->name);
+
+                    if($$->name != "BOOL"){ $$->reg = a.callNumExpGen();}
+                    else{ a.callBoolExpGen($$->truelist, $$->falselist);}
+				}
+				| NUM {
+                    $$ = new Var("INT");
+                    $$->reg = a.genNum($1->size);
+
+				}
+				| NUM B {
+                    if(!($1->size >= 0 && $1->size < 256)){
+                          errorByteTooLarge(yylineno, itos1($1->size)); // Should be $1(NUM) instead :)
+                          exit(0);
+                    }
+                    $$ = new Var("BYTE");
+                    $$->reg = a.genNum($1->size);
+				}
+				| STRING{
+                    $$ = new Var("STRING");
+                    $$->reg = a.strGen($1->name);
+                }
+				| TRUE{
+                    $$ = new Var("BOOL");
+                    a.listGen($$->truelist);
+                  }
+				| FALSE{
+                    $$ = new Var("BOOL");
+                    a.listGen($$->falselist);
+                 }
+				| NOT Exp{
+                     if($2->name != "BOOL"){
+                         errorMismatch(yylineno);
+                         exit(0);
+                     }
+                     $$ = new Var("BOOL");
+                     $$->truelist = $2->falselist;
+                     $$->falselist = $2->truelist;
+                 }
+				| Exp AND M Exp{
+                     if($1->name != "BOOL" || $4->name !="BOOL"){
+                         errorMismatch(yylineno);
+                         exit(0);
+                     }
+                     $$ = new Var("BOOL");
+                     CodeBuffer::instance().bpatch($1->truelist,$3->name);
+                     $$->falselist = CodeBuffer::instance().merge($1->falselist,$4->falselist);
+                     $$->truelist = $4->truelist;
+                }
+				| Exp OR M Exp
+{
+                     if($1->name != "BOOL" || $4->name !="BOOL"){
+                         errorMismatch(yylineno);
+                         exit(0);
+                     }
+                     $$ = new Var("BOOL");
+                     CodeBuffer::instance().bpatch($1->falselist,$3->name);
+                     $$->truelist = CodeBuffer::instance().merge($1->truelist,$4->truelist);
+                     $$->falselist = $4->falselist;
+                }
+				| Exp RELOP Exp
+{
+                    if(($1->name != "INT" && $1->name !="BYTE") || ($3->name != "INT" && $3->name != "BYTE")){
+                        errorMismatch(yylineno);
+                        exit(0);
+                    }
+                    $$ = new Var("BOOL");
+                    a.relGen($1->reg, $2->name, $3->reg, $$->truelist, $$->falselist);
+                }
+;
+OPEN: {
+    if(mis){
+        errorMismatch(yylineno); exit(0);
+     }
+    tables.push(new SymTable(tables.top()));offsets.push(offsets.top());
+    a.openGen();
+}
+CLOSE: {
+            tables.top()->printTable();
+            tables.pop(); offsets.pop();
+            a.closeGen();
+      }
+BoolExp: Exp {
+         if($1->name != "BOOL") {
+            mis = true;
+         }
+         }
+M:       {$$ = new Var(CodeBuffer::instance().genLabel());}
+
+L:       {$$ = new Var(""); $$->truelist = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j "));}
+%%
+
+
+string toType(string t){
+    for(int i = 0; i < t.size(); i++){
+        if(t[i] == '['){
+            return t.substr(0, i);
+        }
+    }
+    return t;
+}
+int getSize(string t){
+    for(int i = 0; i < t.size(); i++){
+        if(t[i] == '['){
+            return atoi((t.substr(i+1, t.size()-1)).c_str());
+        }
+    }
+    return 1;
+}
+void arr(string name, string type, int n){
+    if(tables.top()->findV(name) != NULL){ // $2 instead
+         errorDef(yylineno, name); // $2 instead
+         exit(0);
+    }
+    if(!(n > 0 && n < 256)){
+        errorInvalidArraySize(yylineno, name);//$2 instead
+        exit(0);
+   }
+    tables.top()->insertV(name, type + "["+itos1(n)+"]", offsets.top(),n);// $2 $1 .. $4 instead
+    offsets.top()+= n; // $4
+}
+void arrF(string name, string type, int n){
+    if(tables.top()->findV(name) != NULL){ // $2 instead
+         errorDef(yylineno, name); // $2 instead
+         exit(0);
+    }
+    if(!(n > 0 && n < 256)){
+        errorInvalidArraySize(yylineno, name);//$2 instead
+        exit(0);
+
+   }
+    fOff += 1-n;
+    tables.top()->insertV(name, type + "["+itos1(n)+"]", fOff, n);
+    fOff--; args.push_back(type + "["+itos1(n)+"]");
+}
+
+void yyerror(const char*) { 
+		errorSyn(yylineno);
+		exit(0);}
+
+int main() {
+    mis = false;
+    SymTable* s = new SymTable(NULL);
+    s->function = NULL;
+    tables = stack<SymTable*>();
+    offsets = stack<int>();
+    fOff = -1;
+    tables.push(s);
+    offsets.push(0);
+    vector<string> pArgs,ipArgs;
+    args = vector<string>();
+    pArgs = vector<string>();
+    ipArgs = vector<string>();
+    tmpV = new Var("", "",  0, -1);
+    vector<Var> OV = vector<Var>();
+    OV.push_back(*tmpV);
+    pArgs.push_back("STRING");
+    ipArgs.push_back("INT");
+    tables.top()->insertF("print",pArgs,"VOID");
+    tables.top()->findF("print")->offVar = OV;
+    tables.top()->insertF("printi",ipArgs,"VOID");
+    tables.top()->findF("printi")->offVar = OV;
+    a.prtGen();
+    a.prtiGen();
+	yyparse();
+	tables.top()->printTable();
+	tables.pop();
+    CodeBuffer::instance().printCodeBuffer();
+    CodeBuffer::instance().printDataBuffer();
+	return 0;
+}

@@ -57,8 +57,16 @@ public:
     string name;
     string value;
     TokenType type;
+	string var;
+	int size;
 
-Node( TokenType type, string name = "",string value = ""):name(name), type(type), value(value){};
+    vector<int> truelist;
+    vector<int> falselist;
+	
+Node( TokenType type, string name = "",string value = ""):name(name), type(type), value(value){
+	truelist = vector<int>();
+	falselist = vector<int>();
+};
 
 };
 #define YYSTYPE Node*
