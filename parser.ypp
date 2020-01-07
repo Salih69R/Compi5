@@ -1,0 +1,719 @@
+%{
+	#include <stdio.h>
+	#include <iostream>
+	#include "structs.hpp"
+	#include "hw3_output.hpp"
+	
+
+	
+	int yylex();
+	void yyerror(const char*);
+	extern int yylineno;
+	
+	using namespace std;
+	using namespace output;
+	
+	Symbol_Table symbolTable = Symbol_Table();
+	Function* curFunc;
+	Enum_class* curEnumClass;
+	stack<vector<Node*>> ParamListStack = stack<vector<Node*>>();
+	
+	
+	
+
+%}
+
+
+
+
+%token  VOID INT BYTE B BOOL ENUM TRUE FALSE RETURN ELSE WHILE BREAK CONTINUE SC COMMA LBRACE RBRACE ID NUM STRING
+%right ASSIGN
+%left OR
+%left AND
+%left EQUALOP
+%left RELATIONOP
+%left ADDOPS
+%left MULTOPS
+%right LPAREN RPAREN
+%right IF ELSE
+%right NOT
+
+
+%%
+
+Program : 		Enums Funcs 										
+						{};
+
+
+Funcs :			/*epsilon*/ 													
+						{}
+				| FuncDecl Funcs 													
+						{};
+
+
+
+FuncDecl :		RetType ID  {
+							Variable* var = symbolTable.getVar($2->name);
+							Variable* var_as_class = symbolTable.getVar("enum "+$2->name);
+							if(var != nullptr || symbolTable.isThereEnumContains($2->name) || var_as_class != nullptr){
+							
+								errorDef(yylineno, $2->name);
+								delete $1;
+								delete $2;
+								exit(0);
+							}
+						
+							curFunc = new Function($2->name,$1->type);
+							$2->type = FUNCTION_t;
+							
+						} LPAREN Formals RPAREN LBRACE 
+						{
+					
+						symbolTable.insertFunc(curFunc);
+						
+						
+						}
+						Statements RBRACE 
+						{	
+							
+							
+							symbolTable.closeScope();
+							delete $1;
+							delete $2;
+						
+						}
+						;
+
+Enums :			/*epsilon*/ 															
+						{}
+				| EnumDecl Enums 													
+						{};
+
+EnumDecl :		ENUM ID {
+							Variable* var = symbolTable.getVar($2->name);
+							Variable* var_as_class = symbolTable.getVar("enum "+$2->name);
+							if(var != nullptr || symbolTable.isThereEnumContains($2->name) || var_as_class != nullptr){
+							
+								errorDef(yylineno, $2->name);
+								
+								delete $2;
+								exit(0);
+							}
+							
+							
+							curEnumClass = new Enum_class("enum " + $2->name);
+							delete $2;
+							
+						} LBRACE EnumeratorList RBRACE SC 	
+							
+						{symbolTable.insertVar(curEnumClass);};
+
+RetType :		Type 														
+						{$$ = $1;}
+				| VOID 																
+						{$$ = new Node(VOID_t);};
+
+Formals :		/*epsilon*/ 												
+						{}
+				| FormalsList 														
+						{};
+
+FormalsList :	FormalDecl 													
+						{}
+				| FormalDecl COMMA FormalsList 									
+						{};
+
+FormalDecl :	Type ID 													
+						{
+							
+							Variable* var = symbolTable.getVar($2->name);
+							Variable* var_as_class = symbolTable.getVar("enum "+$2->name);
+							if(var != nullptr || symbolTable.isThereEnumContains($2->name) || var_as_class != nullptr){
+							
+								errorDef(yylineno, $2->name);
+								
+								delete $2;
+								exit(0);
+							}
+							curFunc->addParam(new Variable($1->type,$2->name));
+							$2->type = $1->type;
+						
+						}
+				| EnumType ID 														
+						{
+						
+							Variable* var = symbolTable.getVar($2->name);
+							Variable* var_as_class = symbolTable.getVar("enum "+$2->name);
+							if(var != nullptr || symbolTable.isThereEnumContains($2->name) || var_as_class != nullptr){
+							
+								errorDef(yylineno, $2->name);
+								
+								delete $2;
+								exit(0);
+							}
+							auto tmp = (Enum_class*)$1;
+							if(!symbolTable.CheckIfEnumInGlobalScope(tmp)){
+							errorUndef(yylineno,$1->name);
+							delete $1;
+							exit(0);
+							}
+							curFunc->addParam(new Enum_var(ENUM_t,$2->name,0,"",$1->name));
+							$2->type = $1->type;
+						
+						};
+
+
+EnumeratorList :	Enumerator 											
+						{
+						
+						}
+				| EnumeratorList COMMA Enumerator 									
+						{};
+
+Enumerator :		ID 															
+						{
+						
+							Variable* var = symbolTable.getVar($1->name);
+						
+							Variable* var_as_class = symbolTable.getVar("enum "+$1->name);
+
+
+							
+							if(var != nullptr || symbolTable.isThereEnumContains($1->name) || var_as_class != nullptr || curEnumClass->contains($1->name) || "enum " + $1->name == curEnumClass->name){
+					
+								errorDef(yylineno, $1->name);
+								delete $1;
+								exit(0);
+							}
+							
+							
+						curEnumClass->enum_vals.push_back($1->name);
+						  delete $1;
+						 
+						};
+
+Statements :	Statement 													
+						{}
+				| Statements Statement 												
+						{};
+
+Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
+				| Type ID SC 														
+
+						{	
+						
+							Variable* var = symbolTable.getVar($2->name);
+							Variable* var_as_class = symbolTable.getVar("enum "+$2->name);
+							if(var != nullptr || symbolTable.isThereEnumContains($2->name) || var_as_class != nullptr){
+							
+								errorDef(yylineno, $2->name);
+								delete $1;
+								delete $2;
+								exit(0);
+							}
+							var = new Variable($1->type,$2->name);
+							symbolTable.insertVar(var);
+							
+
+							delete $1;
+							delete $2;
+						}
+				| EnumType ID  SC 													
+						{
+						
+						Variable* var = symbolTable.getVar($2->name);
+							Variable* var_as_class = symbolTable.getVar("enum "+$2->name);
+							if(var != nullptr || symbolTable.isThereEnumContains($2->name) || var_as_class != nullptr){
+							
+								errorDef(yylineno, $2->name);
+								delete $1;
+								delete $2;
+								exit(0);
+							}
+							//check here abut value
+							var = new Enum_var(ENUM_t,$2->name,0,"",$1->name);
+							symbolTable.insertVar(var);
+
+							delete $2;
+						
+						
+						}
+				| EnumDecl 															
+		
+						{}
+				| Type ID ASSIGN Exp SC 											
+						{
+							
+							
+							Variable* var = symbolTable.getVar($2->name);
+							Variable* var_as_class = symbolTable.getVar("enum "+$2->name);
+							if(var != nullptr || symbolTable.isThereEnumContains($2->name) || var_as_class != nullptr){
+							
+								errorDef(yylineno, $2->name);
+								
+								exit(0);
+							}
+							if($1->type != $4->type && (!($1->type == INT_t  && $4->type == BYTE_t  )) )
+							{
+								errorMismatch(yylineno);
+								
+								exit(0);
+							}
+							
+							
+							var = new Variable($1->type,$2->name);
+													
+							symbolTable.insertVar(var);
+
+
+							
+							
+						}
+				| EnumType ID ASSIGN Exp { 
+								Variable* var = symbolTable.getVar($2->name);
+							Variable* var_as_class = symbolTable.getVar("enum "+$2->name);
+							if(var != nullptr || symbolTable.isThereEnumContains($2->name) || var_as_class != nullptr){
+							
+								errorDef(yylineno, $2->name);
+								delete $1;
+								delete $2;
+								delete $4;
+								exit(0);
+							}
+								
+								auto tmp = (Enum_class*)$1;
+								if ((! tmp->contains($4->name))   ){
+									errorUndefEnumValue(yylineno,$2->name);
+									delete $2;
+											
+									exit(0);		
+								
+								}
+								
+							}
+				SC{
+								Enum_var* new_var = new Enum_var(ENUM_t,$2->name,0,$4->value,$1->name);
+										symbolTable.insertVar(new_var);
+										
+										delete $2;
+										
+				}	
+				| ID ASSIGN Exp SC 													
+						{
+						
+							Variable* var = symbolTable.getVar($1->name);
+							if(var == nullptr || var->type == FUNCTION_t ){
+								
+								errorUndef(yylineno, $2->name);
+								delete $1;
+								
+								exit(0);
+							}
+							
+							if( var->type !=ENUM_t  && (var->type != $3->type) && (var->type != INT_t && $3->type != BYTE_t)){
+							
+								errorMismatch(yylineno);
+								delete $1;
+								
+								exit(0);
+							}
+							
+							if(var->type == ENUM_t && ($3->type == ENUM_t || $3->type == INT_t || $3->type == BYTE_t || $3->type == BOOL_t|| $3->type == STRING_t || $3->type == VOID_t)){
+								auto tmp = (Enum_var*)var;
+								auto tmp_class = (Enum_class*)symbolTable.getVar(tmp->enum_type);
+								if (tmp_class == nullptr || (!tmp_class->contains($3->name))){
+									errorUndefEnumValue(yylineno,var->name);
+									exit(0);
+								}
+							}
+							
+							var->value = $3->value;
+
+							delete $1;
+							
+						}
+				| Call SC 															
+						{}
+				| RETURN SC 														
+						{
+							auto& scope = symbolTable.scopes_table[symbolTable.scopes_table.size()-1 < 0 ? 0 : symbolTable.scopes_table.size()-1 ];
+							assert(scope.curFunc != nullptr);//grammar makes sure
+							auto f = scope.curFunc;
+							if(f->returnType != VOID_t){
+								errorMismatch(yylineno);
+								exit(0);
+							}
+						}
+				| RETURN Exp SC 													
+						{
+							auto& scope = symbolTable.scopes_table[symbolTable.scopes_table.size()-1 < 0 ? 0 : symbolTable.scopes_table.size()-1];
+							assert(scope.curFunc != nullptr);//grammar makes sure
+							auto f = scope.curFunc;
+							if((f->returnType != $2->type || $2->type == VOID_t) && !(f->returnType == INT_t && $2->type == BYTE_t) ){
+								errorMismatch(yylineno);
+								delete $2;
+								exit(0);
+							}
+						}
+				| IF LPAREN checkBoolExp RPAREN OPENORMAL Statement CLOSE  									
+						{
+						}
+				| IF LPAREN checkBoolExp   RPAREN OPENORMAL
+							
+							Statement CLOSE
+							ELSE OPENORMAL
+						
+							Statement CLOSE
+						{}
+				| WHILE LPAREN checkBoolExp 
+				{
+					
+					 symbolTable.openScope(LOOP);
+				} RPAREN  Statement 									
+						{
+							symbolTable.closeScope();
+						 }
+				| BREAK SC 															
+						{
+							auto& scope = symbolTable.scopes_table[symbolTable.scopes_table.size()-1 < 0 ? 0 : symbolTable.scopes_table.size()-1];
+							if(!scope.isLoop){
+								errorUnexpectedBreak(yylineno);
+								exit(0);
+							}
+						}
+				| CONTINUE SC 														
+						{
+							auto& scope = symbolTable.scopes_table[symbolTable.scopes_table.size()-1 < 0 ? 0 : symbolTable.scopes_table.size()-1];
+							if(!scope.isLoop){
+								errorUnexpectedContinue(yylineno);
+								exit(0);
+							}
+						};
+checkBoolExp :     Exp {
+				
+						if($1->type != BOOL_t)
+						{
+							errorMismatch(yylineno);
+							exit(0);
+						}
+					}
+Call :			ID LPAREN {ParamListStack.push(vector<Node*>()); } ExpList RPAREN 										
+						{
+						
+							Function* callee = (Function*)symbolTable.getVar($1->name);
+							auto& vec = ParamListStack.top();
+
+							if (callee == nullptr || callee->type != FUNCTION_t){
+								
+								errorUndefFunc(yylineno, $1->name);
+								ParamListStack.pop();
+								delete $1;
+								exit(0);
+							}
+							delete $1;
+							callee->ValidateParameters(vec,symbolTable);
+							$$ = new Node(callee->returnType);	
+							ParamListStack.pop();
+
+						}
+
+				| ID LPAREN RPAREN 													
+						{	
+							Function* callee = (Function*)symbolTable.getVar($1->name);
+
+							if (callee == nullptr || callee->type != FUNCTION_t){
+								
+								errorUndefFunc(yylineno, $1->name);
+								delete $1;
+								exit(0);
+							}
+
+							delete $1;
+							auto tmp = vector<Node*>();
+							callee->ValidateParameters(tmp,symbolTable);
+							$$ = new Node(callee->returnType);
+
+						};
+
+ExpList :		Exp 														
+						{ParamListStack.top().push_back($1);}
+				| Exp COMMA ExpList 												
+						{ParamListStack.top().push_back($1);};
+
+Type :			INT 															
+						{
+						
+					
+						$$ = new Node(INT_t);}
+				| BYTE 																
+						{$$ = new Node(BYTE_t);}
+				| BOOL 																
+						{
+						
+						$$ = new Node(BOOL_t);};
+
+EnumType :		ENUM ID 													
+						{Node* var = symbolTable.getVar("enum " + $2->name);
+							if (var == nullptr){
+							
+							errorUndefEnum(yylineno, $2->name);
+							delete $2;
+							exit(0);
+							}
+							delete $2;
+							$$ = var;
+						};
+						
+
+Exp :			LPAREN Exp RPAREN 											
+						{$$ = $2;}
+
+				| Exp ADDOPS Exp 													
+						{ if (($1->type != INT_t && $1->type !=BYTE_t) || ($3->type != INT_t && $3->type != BYTE_t)){
+							errorMismatch(yylineno);
+							delete $1;
+							delete $3;
+							exit(0);
+						}
+						if ($1->type == BYTE_t && $3->type == BYTE_t){
+							
+							$$ = new Node(BYTE_t);
+						}
+						else{ 
+							$$= new Node(INT_t);
+							
+							}
+
+						}
+				| Exp MULTOPS Exp 													
+						{ if (($1->type != INT_t && $1->type !=BYTE_t) || ($3->type != INT_t && $3->type != BYTE_t)){
+							errorMismatch(yylineno);
+							delete $1;
+							delete $3;
+							exit(0);
+						}
+						if ($1->type == BYTE_t && $3->type == BYTE_t){
+							
+							$$ = new Node(BYTE_t);
+						}
+						else{ 
+							$$= new Node(INT_t);
+							
+							}
+
+						}
+
+				| ID 																
+					{
+					Variable* var = symbolTable.getVar($1->name);
+							if(  var == nullptr ){
+							
+								if (!symbolTable.isThereEnumContains($1->name)){
+								
+								errorUndef(yylineno, $1->name);
+								delete $1;
+								exit(0);
+								}
+							}
+							
+						if (symbolTable.isThereEnumContains($1->name) && var == nullptr){
+
+							auto tmp = symbolTable.FindEnumContains($1->name);//we know this isn't nullptr for sure
+
+								//todo check value
+
+							$$ = new Enum_var(ENUM_t,$1->name,0,$1->name,tmp->name);
+							
+						
+						}
+						else{
+							$$ = var;
+						}
+						
+						
+					}
+
+				| Call 																
+					{
+						
+						$$ = $1;
+					}
+
+				| NUM 																
+						{ 
+						$$ = new Node(INT_t , $1->name , $1->value);
+							delete $1;
+						}
+
+				| NUM B 														
+					{	if( !( stoi($1->value) >= 0 && (stoi($1->value) <= 255))){
+										
+											errorByteTooLarge(yylineno, $1->value);
+											delete $1;
+											exit(0);
+										}
+						$$ = new Node(BYTE_t,$1->name,$1->value);
+						delete $1;
+
+					}
+
+				| STRING 															
+						{$$ = new Node(STRING_t,$1->name,$1->name);}
+
+				| TRUE 																
+						{$$ = new Node(BOOL_t);}
+
+				| FALSE 															
+						{$$ = new Node(BOOL_t);}
+						
+				| NOT Exp 															
+						{
+							if($2->type != BOOL_t){
+									errorMismatch(yylineno);
+									delete $2;
+									exit(0);
+							}
+							
+							$$ = new Node(BOOL_t);
+							
+						}
+
+
+				| Exp AND Exp 														
+						{
+							if($1->type != BOOL_t || $3->type != BOOL_t){
+									errorMismatch(yylineno);
+									delete $1;
+									delete $3;
+									exit(0);
+							}
+							$$ = new Node(BOOL_t);
+							
+
+						}
+
+				| Exp OR Exp 														
+						{
+							if($1->type != BOOL_t || $3->type != BOOL_t){
+									errorMismatch(yylineno);
+									delete $1;
+									delete $3;
+									exit(0);
+							}
+							$$ = new Node(BOOL_t);
+							
+						}
+
+				| Exp RELATIONOP Exp 												
+						{
+							
+							
+							if( ($1->type != INT_t && $1->type != BYTE_t) || ($3->type != INT_t && $3->type != BYTE_t)){
+									errorMismatch(yylineno);
+									delete $1;
+									delete $3;
+									exit(0);
+							}
+							
+							$$ = new Node(BOOL_t);
+							
+						}
+
+				| Exp EQUALOP Exp 													
+						{
+							if(($1->type != INT_t && $1->type != BYTE_t) || ($3->type != INT_t && $3->type != BYTE_t)){
+									errorMismatch(yylineno);
+									delete $1;
+									delete $3;
+									exit(0);
+							}
+							$$ = new Node(BOOL_t);
+							
+						}
+
+				| LPAREN Type	RPAREN Exp 
+				
+						{	
+						if ( $2->type != INT_t){
+								delete $2;
+								errorMismatch(yylineno);
+								exit(0);
+								}
+						
+							if($4->type != ENUM_t && !(symbolTable.isThereEnumContains($4->name))){
+								delete $2;
+								
+								errorMismatch(yylineno);
+								exit(0);
+							}
+							Node* enum_var = symbolTable.getVar($4->name);
+							if (enum_var == nullptr && !(symbolTable.isThereEnumContains($4->name))){
+								delete $2;
+								
+								errorUndef(yylineno,$4->name);
+								exit(0);
+							}
+							
+							auto enum_var_casted = enum_var==nullptr ? nullptr : (Enum_var*)enum_var; 
+							string enum_var_name = enum_var==nullptr ? "" : enum_var_casted->name;
+							int enum_var_offset = enum_var==nullptr ? 0 : enum_var_casted->offset; 
+							string enum_var_value = enum_var==nullptr ? "" : enum_var_casted->value; 
+							Variable* new_int = new Variable(INT_t,enum_var_name,enum_var_offset,enum_var_value);
+							delete $2;
+							$$ = new_int;
+						};
+						
+						
+OPENORMAL:					{symbolTable.openScope(NORMAL);};
+CLOSE:						{symbolTable.closeScope();};
+
+
+%%
+
+
+
+int main()
+{
+
+	symbolTable.openScope(GLOBAL);
+	curFunc = new Function("print", VOID_t);
+	Variable* dummy = new Variable(STRING_t);
+	curFunc->addParam(dummy);
+	symbolTable.insertFunc(curFunc);
+	symbolTable.scopes_table.pop_back();
+	symbolTable.offset_stack.pop();
+	
+	curFunc = new Function("printi", VOID_t);
+	dummy = new Variable(INT_t,"");
+	curFunc->addParam(dummy);
+	symbolTable.insertFunc(curFunc);
+	symbolTable.scopes_table.pop_back();
+	symbolTable.offset_stack.pop();
+	
+
+	yyparse();
+	
+	
+	
+	/*checking if main exsists*/
+	Function* main_func = (Function*)symbolTable.getVar("main");
+	if (main_func == nullptr || main_func->type != FUNCTION_t || main_func->paramTypes.size()!= 0 || main_func->returnType != VOID_t){
+		errorMainMissing();
+		return 0;
+	}
+	
+	symbolTable.closeScope();
+
+
+    return 0;
+}
+
+void yyerror(char const* error){
+	errorSyn(yylineno);
+	exit(0);
+}
+
+
+
+
+
