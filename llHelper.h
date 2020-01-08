@@ -32,7 +32,8 @@ string opToCommandU(string op )
     if(op == "<=")	{ return ("ule "); } 
     if(op == ">=")	{ return ("uge "); }
 	
-	throw "error in opToCommand";
+	cout << "error in opToCommandU" << endl;
+	throw -1;
 }
 
 string opToCommand(string op )
@@ -48,8 +49,13 @@ string opToCommand(string op )
     if(op == "<=")	{ return ("sle "); }
     if(op == ">=")	{ return ("sge "); }
 	
-	throw "error in singedopToCommand";
+	
+	cout << "error in opToCommand" << endl;
+	throw -1;
 }
+
+
+//int to string
 string itos1(int num){
     ostringstream convert;
     convert << num;
@@ -65,12 +71,14 @@ void emitGlobal(string s){
 
 
 
-
+//TODO: the registers names nmow are "$t0-9" and "$s10-49", check if we need to change to "%t0-49"
 class regPool {
 public:
     string regs[REG_NUM];
     bool isAvail[REG_NUM];
     vector<string> allocated;
+	
+	
     regPool(){
         for(int i=0; i<REG_NUM;i++) isAvail[i]=true;
         for(int i=0; i<REG_NUM; i++){
@@ -79,6 +87,7 @@ public:
         }
         allocated = vector<string>();
     }
+	
     string regAlloc(){
         for(int i=0; i<REG_NUM; i++){
             if(isAvail[i]){
@@ -88,8 +97,8 @@ public:
             }
         }
         //return "NO";
-        cout << "you fucked up" << endl;
-        throw ;
+        cout << "no more registers available (max regs in use is " << REG_NUM << endl;
+        throw -1;
     }
     void regDealloc(string reg){
         for(int i=0; i<REG_NUM; i++){
@@ -103,6 +112,10 @@ public:
 
 };
 
+
+
+
+//
 class Gen{
     regPool p;
     int strs;
@@ -112,8 +125,8 @@ public:
         strs = 0;
         p = regPool();
         frames = vector<int>();
-        emitData("divErr: .asciiz \"Error division by zero\\n\"");
-        emitData("arrErr: .asciiz \"Error index out of bounds\\n\"");
+        emitData("divErr: .asciiz \"Error division by zero\\n\"");//TODO: check if need to emit this data in our hw
+        emitData("arrErr: .asciiz \"Error index out of bounds\\n\"");//TODO: check if need to emit this data in our hw
     }
     string genNum(int num){
         string regName = p.regAlloc();
@@ -134,11 +147,14 @@ public:
     void funcDecGen(string id){
         if(id!="main") emit(".globl " + id + "1");
         else emit(".globl " + id);
+		
         if(id!="main") emit(".ent " + id + "1");
         else emit(".ent " + id);
+		
         //if(id == "main"){
         if(id!= "main" )emit(id + "1:");
         else emit(id + ":");
+		
         emit("move $fp, $sp");
 
         //else emit(id + ":");

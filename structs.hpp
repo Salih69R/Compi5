@@ -56,14 +56,16 @@ class Node{
 public:
     string name;
     string value;
+	string reg;
     TokenType type;
 	string var;
 	int size;
+	
 
     vector<int> truelist;
     vector<int> falselist;
 	
-Node( TokenType type, string name = "",string value = ""):name(name), type(type), value(value){
+Node( TokenType type, string name = "",string value = "" , string reg = ""):name(name), type(type), value(value), reg(reg) {
 	truelist = vector<int>();
 	falselist = vector<int>();
 };

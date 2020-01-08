@@ -3,7 +3,7 @@
 	#include <iostream>
 	#include "structs.hpp"
 	#include "hw3_output.hpp"
-	
+	#include "bp.hpp"
 
 	
 	int yylex();
@@ -481,7 +481,7 @@ Exp :			LPAREN Exp RPAREN
 						}
 						else{ 
 							$$= new Node(INT_t);
-							
+							$$->reg = arithmeticGen($1->reg,$2->name,$3->reg,true);
 							}
 
 						}
