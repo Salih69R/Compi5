@@ -6,9 +6,17 @@
 	#include "bp.hpp"
 
 	
+	
 	int yylex();
 	void yyerror(const char*);
+	
+	
+	
+	
+	
 	extern int yylineno;
+	
+	
 	
 	using namespace std;
 	using namespace output;
@@ -17,8 +25,11 @@
 	Function* curFunc;
 	Enum_class* curEnumClass;
 	stack<vector<Node*>> ParamListStack = stack<vector<Node*>>();
+	Gen a;
 	
-	
+	//TODO: do we need these?
+	//int fOff;
+	//bool mis;
 	
 
 %}
@@ -66,6 +77,9 @@ FuncDecl :		RetType ID  {
 							curFunc = new Function($2->name,$1->type);
 							$2->type = FUNCTION_t;
 							
+							a.openGen();
+							a.funcDecGen($2->name);
+							
 						} LPAREN Formals RPAREN LBRACE 
 						{
 					
@@ -76,7 +90,7 @@ FuncDecl :		RetType ID  {
 						Statements RBRACE 
 						{	
 							
-							
+							a.funcEndGen($2->name);//TODO: check if need to delete from here or in the function
 							symbolTable.closeScope();
 							delete $1;
 							delete $2;
@@ -162,7 +176,7 @@ FormalDecl :	Type ID
 						
 						};
 
-
+//TODO: use a here
 EnumeratorList :	Enumerator 											
 						{
 						
@@ -197,7 +211,15 @@ Statements :	Statement
 				| Statements Statement 												
 						{};
 
+
+
+
+//TODO: also in Statement rule's, 
+//      check if you need to use gen a in the enum class in a uniqe way
+//      (not using it at all now)
+
 Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
+
 				| Type ID SC 														
 
 						{	
@@ -214,11 +236,12 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							var = new Variable($1->type,$2->name);
 							symbolTable.insertVar(var);
 							
+							a.idCreatGen(1);
 
 							delete $1;
 							delete $2;
 						}
-				| EnumType ID  SC 													
+				| EnumType ID  SC 	//TODO: use a?												
 						{
 						
 						Variable* var = symbolTable.getVar($2->name);
@@ -266,11 +289,13 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							symbolTable.insertVar(var);
 
 
+							if($1->name != "BOOL"){ a.idCreatNGen(1, $4->reg);}
+							else{ a.idCreatBGen($4->truelist, $4->falselist);}
 							
 							
 						}
-				| EnumType ID ASSIGN Exp { 
-								Variable* var = symbolTable.getVar($2->name);
+				| EnumType ID ASSIGN Exp { //TODO: use a?	
+							Variable* var = symbolTable.getVar($2->name);
 							Variable* var_as_class = symbolTable.getVar("enum "+$2->name);
 							if(var != nullptr || symbolTable.isThereEnumContains($2->name) || var_as_class != nullptr){
 							
@@ -328,7 +353,13 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							}
 							
 							var->value = $3->value;
-
+							if(var->type != "BOOL"){
+							a.idAssignNGen(var->size, $3->reg, a.idGetGen(var->offset, false, var->size), var->offset, $3->offset, var->size != 0);
+							}
+							else{ 
+							a.idAssignBGen(var->offset, $3->truelist, $3->falselist);
+							}
+							
 							delete $1;
 							
 						}
@@ -343,6 +374,7 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 								errorMismatch(yylineno);
 								exit(0);
 							}
+							a.retGen("");
 						}
 				| RETURN Exp SC 													
 						{
@@ -354,17 +386,26 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 								delete $2;
 								exit(0);
 							}
-						}
-				| IF LPAREN checkBoolExp RPAREN OPENORMAL Statement CLOSE  									
-						{
-						}
-				| IF LPAREN checkBoolExp   RPAREN OPENORMAL
 							
-							Statement CLOSE
-							ELSE OPENORMAL
+							if($2->name != "BOOL")
+								a.retGen($2->reg);
+							else 	
+								a.retBoolGen($2->truelist, $2->falselist);
+						}
 						
-							Statement CLOSE
-						{}
+				| IF LPAREN checkBoolExp M RPAREN OPENORMAL Statement CLOSE  									
+						{         
+							CodeBuffer::instance().bpatch($3->truelist, $4->name);
+							CodeBuffer::instance().bpatch($3->falselist, CodeBuffer::instance().genLabel());
+						}
+				| IF LPAREN checkBoolExp M RPAREN OPENORMAL Statement CLOSE ELSE OPENORMAL Statement CLOSE
+						{
+							CodeBuffer::instance().bpatch($3->truelist, $4->name);
+							CodeBuffer::instance().bpatch($3->falselist,$11->name);
+							CodeBuffer::instance().bpatch($10->truelist, CodeBuffer::instance().genLabel());
+						}
+				
+				//reached here in adding the a.gen in staetment rules
 				| WHILE LPAREN checkBoolExp 
 				{
 					
@@ -478,10 +519,12 @@ Exp :			LPAREN Exp RPAREN
 						if ($1->type == BYTE_t && $3->type == BYTE_t){
 							
 							$$ = new Node(BYTE_t);
+							$$->reg = a.arithmeticGen($1->reg,$2->name,$3->reg,false);
+
 						}
 						else{ 
 							$$= new Node(INT_t);
-							$$->reg = arithmeticGen($1->reg,$2->name,$3->reg,true);
+							$$->reg = a.arithmeticGen($1->reg,$2->name,$3->reg,true);
 							}
 
 						}
@@ -495,10 +538,13 @@ Exp :			LPAREN Exp RPAREN
 						if ($1->type == BYTE_t && $3->type == BYTE_t){
 							
 							$$ = new Node(BYTE_t);
+							$$->reg = arithmeticGen($1->reg,$2->name,$3->reg,false);
+							
 						}
 						else{ 
 							$$= new Node(INT_t);
-							
+	                        $$->reg = a.arithmeticGen($1->reg,$2->name,$3->reg,true);
+
 							}
 
 						}
@@ -521,27 +567,50 @@ Exp :			LPAREN Exp RPAREN
 							auto tmp = symbolTable.FindEnumContains($1->name);//we know this isn't nullptr for sure
 
 								//todo check value
-
+							
 							$$ = new Enum_var(ENUM_t,$1->name,0,$1->name,tmp->name);
 							
 						
 						}
 						else{
 							$$ = var;
+							
 						}
+						/*
+						TODO: these needed?
+							if(v->type != "BOOL"){ 
+									$$->reg = a.idGetGen(v->offset, v->size == 0, v->size);
+								}
+								else{ 
+									a.idBoolGetGen(v->offset, $$->truelist, $$->falselist);
+								}
+						
+						
+						*/
+						
+						
+						
 						
 						
 					}
 
 				| Call 																
 					{
-						
 						$$ = $1;
+						/*
+						TODO: these needed?
+						
+                    if($$->name != "BOOL"){ $$->reg = a.callNumExpGen();}
+                    else{ a.callBoolExpGen($$->truelist, $$->falselist);}
+					*/
+					
 					}
+					
 
 				| NUM 																
 						{ 
 						$$ = new Node(INT_t , $1->name , $1->value);
+						$$->reg = genNum($1->size);
 							delete $1;
 						}
 
@@ -553,18 +622,25 @@ Exp :			LPAREN Exp RPAREN
 											exit(0);
 										}
 						$$ = new Node(BYTE_t,$1->name,$1->value);
+						$$->reg = a.genNum($1->size);
 						delete $1;
 
 					}
 
 				| STRING 															
-						{$$ = new Node(STRING_t,$1->name,$1->name);}
+						{
+						$$ = new Node(STRING_t,$1->name,$1->name);
+						$$->reg = a.strGen($1->name);
+					}
 
 				| TRUE 																
-						{$$ = new Node(BOOL_t);}
+						{$$ = new Node(BOOL_t);
+						listGen($$->truelist);
+						}
 
 				| FALSE 															
-						{$$ = new Node(BOOL_t);}
+						{$$ = new Node(BOOL_t);
+						listGen($$->falselist)}
 						
 				| NOT Exp 															
 						{
@@ -576,32 +652,39 @@ Exp :			LPAREN Exp RPAREN
 							
 							$$ = new Node(BOOL_t);
 							
+							$$->truelist = $2->falselist;
+							$$->falselist = $2->truelist;
+							
 						}
 
 
-				| Exp AND Exp 														
+				| Exp AND M Exp 														
 						{
-							if($1->type != BOOL_t || $3->type != BOOL_t){
+							if($1->type != BOOL_t || $4->type != BOOL_t){
 									errorMismatch(yylineno);
 									delete $1;
-									delete $3;
+									delete $4;
 									exit(0);
 							}
 							$$ = new Node(BOOL_t);
-							
+							 CodeBuffer::instance().bpatch($1->truelist,$4->name);
+							$$->falselist = CodeBuffer::instance().merge($1->falselist,$4->falselist);
+							$$->truelist = $4->truelist;
 
 						}
 
-				| Exp OR Exp 														
+				| Exp OR M Exp 														
 						{
-							if($1->type != BOOL_t || $3->type != BOOL_t){
+							if($1->type != BOOL_t || $4->type != BOOL_t){
 									errorMismatch(yylineno);
 									delete $1;
-									delete $3;
+									delete $4;
 									exit(0);
 							}
 							$$ = new Node(BOOL_t);
-							
+							 CodeBuffer::instance().bpatch($1->falselist,$4->name);
+							$$->truelist = CodeBuffer::instance().merge($1->truelist,$4->truelist);
+							$$->falselist = $4->falselist;
 						}
 
 				| Exp RELATIONOP Exp 												
@@ -616,7 +699,7 @@ Exp :			LPAREN Exp RPAREN
 							}
 							
 							$$ = new Node(BOOL_t);
-							
+							relGen($1->reg, $2->name, $3->reg, $$->truelist, $$->falselist)
 						}
 
 				| Exp EQUALOP Exp 													
@@ -661,6 +744,14 @@ Exp :			LPAREN Exp RPAREN
 							Variable* new_int = new Variable(INT_t,enum_var_name,enum_var_offset,enum_var_value);
 							delete $2;
 							$$ = new_int;
+							
+							if($$->name != "BOOL"){
+							$$->reg = a.idGetGen(v->offset, true, v->size, $3->reg);
+							}
+							else{
+							a.idBoolGetGen(v->offset, $$->truelist, $$->falselist, $3->reg, v->size);
+							}
+							
 						};
 						
 						
