@@ -6,43 +6,49 @@
 #define COMPI_HW5_AUXILARY_H
 
 #include "bp.hpp"
-#include "SymTable.h"
+#include "structs.hpp"
 #include <iostream>
 #include <string>
 #include <string.h>
 #include <vector>
-#include <set>
+#include <set> //TODO: delete if not used
 #include <stdbool.h>
-#define REG_NUM 18
+#define REG_NUM 50
 using namespace std;
 
+
+
+//TODO check here about the -(if there is - then it should be a signed op) 
+string opToCommandU(string op )
+{
+    if(op == "+")	{ return ("add "); }
+    if(op == "-")	{ return ("sub "); }
+    if(op == "*")	{ return ("mul "); }
+    if(op == "==")	{ return ("eq "); }
+    if(op == "!=")	{ return ("ne "); }	
+    if(op == "/")	{ return ("udiv "); }
+    if(op == "<") 	{ return ("ult "); }
+    if(op == ">") 	{ return ("ugt "); }
+    if(op == "<=")	{ return ("ule "); } 
+    if(op == ">=")	{ return ("uge "); }
+	
+	throw "error in opToCommand";
+}
 
 string opToCommand(string op )
 {
     if(op == "+")	{ return ("add "); }
     if(op == "-")	{ return ("sub "); }
     if(op == "*")	{ return ("mul "); }
-    if(op == "/")	{ return ("div "); }
-    if(op == "==")	{ return ("beq "); }
-    if(op == "!=")	{ return ("bne "); }
-    if(op == "<") 	{ return ("blt "); }
-    if(op == ">") 	{ return ("bgt "); }
-    if(op == "<=")	{ return ("ble "); }
-    if(op == ">=")	{ return ("bge "); }
-}
-
-string opToCommandU(string op )
-{
-    if(op == "+")	{ return ("addu "); }
-    if(op == "-")	{ return ("subu "); }
-    if(op == "*")	{ return ("mul "); }
-    if(op == "/")	{ return ("div "); }
-    if(op == "==")	{ return ("beq "); }
-    if(op == "!=")	{ return ("bne "); }
-    if(op == "<") 	{ return ("blt "); }
-    if(op == ">") 	{ return ("bgt "); }
-    if(op == "<=")	{ return ("ble "); }
-    if(op == ">=")	{ return ("bge "); }
+    if(op == "==")	{ return ("eq "); }
+    if(op == "!=")	{ return ("ne "); }
+    if(op == "/")	{ return ("sdiv "); }
+    if(op == "<") 	{ return ("slt "); }
+    if(op == ">") 	{ return ("sgt "); }
+    if(op == "<=")	{ return ("sle "); }
+    if(op == ">=")	{ return ("sge "); }
+	
+	throw "error in singedopToCommand";
 }
 string itos1(int num){
     ostringstream convert;
@@ -53,8 +59,8 @@ string itos1(int num){
 int emit(string s){
     return CodeBuffer::instance().emit(s);
 }
-void emitData(string s){
-    CodeBuffer::instance().emitData(s);
+void emitGlobal(string s){
+    CodeBuffer::instance().emitGlobal(s);
 }
 
 

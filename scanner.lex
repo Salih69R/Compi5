@@ -93,15 +93,19 @@ continue 										{
 													return ASSIGN;
 												}
 "<="|">="|"<"|">"								{
+													yylval = new Node(RELATIONOP_t, yytext,yytext);
 													return RELATIONOP;
 												}	
 "=="|"!="										{
+													yylval = new Node(EQUALOP_t, yytext,yytext);
 													return EQUALOP;
 												}
 \+|\-											{
+													yylval = new Node(ADDOPS_t, yytext,yytext);
 													return ADDOPS;
 												}
 \*|\/											{
+													yylval = new Node(MULTOPS_t, yytext,yytext);
 													return MULTOPS;
 												}
 [a-zA-Z][a-zA-Z0-9]*							{ 
