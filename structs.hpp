@@ -157,4 +157,6 @@ public:
 };
 
 
+vector<string> modifiedTokensToString(vector<TokenType>& vec , vector<Variable*> params);
+
 #endif //COMPI_3_STRUCTS_HPP

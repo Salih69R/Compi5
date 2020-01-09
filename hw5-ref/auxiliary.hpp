@@ -6,61 +6,135 @@
 #define COMPI_HW5_AUXILARY_H
 
 #include "bp.hpp"
-#include "SymTable.h"
 #include <iostream>
 #include <string>
 #include <string.h>
 #include <vector>
 #include <set>
 #include <stdbool.h>
-#define REG_NUM 18
+#include "structs.hpp"
+#define REG_NUM 50
 using namespace std;
 
+
+
+
+
+
+//TODO check here about the -(if there is - then it should be a signed op) 
+string opToCommandU(string op )
+{
+    if(op == "+")	{ return ("add "); }
+    if(op == "-")	{ return ("sub "); }
+    if(op == "*")	{ return ("mul "); }
+    if(op == "==")	{ return ("eq "); }
+    if(op == "!=")	{ return ("ne "); }	
+    if(op == "/")	{ return ("udiv "); }
+    if(op == "<") 	{ return ("ult "); }
+    if(op == ">") 	{ return ("ugt "); }
+    if(op == "<=")	{ return ("ule "); } 
+    if(op == ">=")	{ return ("uge "); }
+	
+	cout << "error in opToCommandU" << endl;
+	throw -1;
+}
 
 string opToCommand(string op )
 {
     if(op == "+")	{ return ("add "); }
     if(op == "-")	{ return ("sub "); }
     if(op == "*")	{ return ("mul "); }
-    if(op == "/")	{ return ("div "); }
-    if(op == "==")	{ return ("beq "); }
-    if(op == "!=")	{ return ("bne "); }
-    if(op == "<") 	{ return ("blt "); }
-    if(op == ">") 	{ return ("bgt "); }
-    if(op == "<=")	{ return ("ble "); }
-    if(op == ">=")	{ return ("bge "); }
+    if(op == "==")	{ return ("eq "); }
+    if(op == "!=")	{ return ("ne "); }
+    if(op == "/")	{ return ("sdiv "); }
+    if(op == "<") 	{ return ("slt "); }
+    if(op == ">") 	{ return ("sgt "); }
+    if(op == "<=")	{ return ("sle "); }
+    if(op == ">=")	{ return ("sge "); }
+	
+	
+	cout << "error in opToCommand" << endl;
+	throw -1;
 }
 
-string opToCommandU(string op )
-{
-    if(op == "+")	{ return ("addu "); }
-    if(op == "-")	{ return ("subu "); }
-    if(op == "*")	{ return ("mul "); }
-    if(op == "/")	{ return ("div "); }
-    if(op == "==")	{ return ("beq "); }
-    if(op == "!=")	{ return ("bne "); }
-    if(op == "<") 	{ return ("blt "); }
-    if(op == ">") 	{ return ("bgt "); }
-    if(op == "<=")	{ return ("ble "); }
-    if(op == ">=")	{ return ("bge "); }
-}
+
 string itos1(int num){
-    ostringstream convert;
-    convert << num;
-    string res(convert.str());
-    return res;
+    return to_string(num);
 }
+
+
+string paramsToString(vector<string> args){
+	
+	string ret = "";
+		
+	for(int i=0;i < args.size(); ++i){
+			
+		if(i!=args.size()-1)
+			ret += args[i] + ",";
+		else
+			ret += args[i];
+	}
+		
+	return ret;
+}
+	
+	
+string TokenTypeToLlvmType(TokenType type){
+	
+	switch(type){
+			
+			case BOOL_t: 	return "i1"   ; break;
+			case INT_t:   	return "i32"	; break;
+			case BYTE_t:   	return "i8"	; break;
+			case VOID_t:   	return "void"	; break;
+			default : cout << "error in TypeToLvmTypes" << endl;
+			exit(0);
+			break;
+	
+	}
+	
+}
+	
+	
+vector<string> TypeToLvmTypes(vector<TokenType> paramTypes){
+	
+	vector<string> ret = vector<string>();
+	
+	for (auto i = paramTypes.begin() ; i!= paramTypes.end() ; i++){
+		
+		ret.push_back( TokenTypeToLlvmType(*i) );
+		
+	}
+	return ret;
+	
+}	
+
+
+	
+	
+	
+	
+	
+
+
+
 int emit(string s){
     return CodeBuffer::instance().emit(s);
 }
-void emitData(string s){
-    CodeBuffer::instance().emitData(s);
+void emitGlobal(string s){
+    CodeBuffer::instance().emitGlobal(s);
 }
+
+
+
+//TODO: the registers names nmow are "$t0-9" and "$s10-49", check if we need to change to "%t0-49"
 class regPool {
 public:
     string regs[REG_NUM];
     bool isAvail[REG_NUM];
     vector<string> allocated;
+	
+	
     regPool(){
         for(int i=0; i<REG_NUM;i++) isAvail[i]=true;
         for(int i=0; i<REG_NUM; i++){
@@ -69,6 +143,7 @@ public:
         }
         allocated = vector<string>();
     }
+	
     string regAlloc(){
         for(int i=0; i<REG_NUM; i++){
             if(isAvail[i]){
@@ -78,8 +153,8 @@ public:
             }
         }
         //return "NO";
-        cout << "you fucked up" << endl;
-        throw ;
+        cout << "no more registers available (max regs in use is " << REG_NUM << endl;
+        throw -1;
     }
     void regDealloc(string reg){
         for(int i=0; i<REG_NUM; i++){
@@ -93,6 +168,8 @@ public:
 
 };
 
+
+
 class Gen{
     regPool p;
     int strs;
@@ -102,8 +179,8 @@ public:
         strs = 0;
         p = regPool();
         frames = vector<int>();
-        emitData("divErr: .asciiz \"Error division by zero\\n\"");
-        emitData("arrErr: .asciiz \"Error index out of bounds\\n\"");
+        emitGlobal("divErr: .asciiz \"Error division by zero\\n\""); //TODO: check if we need these emits here
+        emitGlobal("arrErr: .asciiz \"Error index out of bounds\\n\"");
     }
     string genNum(int num){
         string regName = p.regAlloc();
@@ -121,8 +198,14 @@ public:
         emit("add $sp,$sp,"+itos1(4*frames.back()));
 
     }
-    void funcDecGen(string id){
-        if(id!="main") emit(".globl " + id + "1");
+	
+	
+	
+
+	
+	
+    void funcDecGen(string id , string return_type , vector<string> params){
+        /*if(id!="main") emit(".globl " + id + "1");
         else emit(".globl " + id);
         if(id!="main") emit(".ent " + id + "1");
         else emit(".ent " + id);
@@ -132,6 +215,16 @@ public:
         emit("move $fp, $sp");
 
         //else emit(id + ":");
+		*/
+		//emit("ignore above");
+		emit("define i" +  return_type + " " + id + "(" +  paramsToString(params)  +   "){" );
+		//emit("ignore below");
+		
+		
+		
+		
+		
+		
     }
     void funcEndGen(string id){
         emit("jr $ra");
@@ -228,7 +321,7 @@ public:
     }
     string strGen(string str){
         string r = p.regAlloc();
-        emitData("str" + itos1(strs) + ": .asciiz " + str + "");
+        emitGlobal("str" + itos1(strs) + ": .asciiz " + str + "");
         emit("la " + r + "," + "str" + itos1(strs));
         strs++;
         return r;
