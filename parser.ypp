@@ -235,6 +235,7 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							var = new Variable($1->type,$2->name);
 							symbolTable.insertVar(var);
 							
+							//Q: it takes size, what is size?
 							a.idCreatGen(1);
 
 							delete $1;
@@ -288,7 +289,7 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							symbolTable.insertVar(var);
 
 
-							if($1->name != "BOOL"){ a.idCreatNGen(1, $4->reg);}
+							if($1->type != BOOL_t){ a.idCreatNGen(1, $4->reg);}
 							else{ a.idCreatBGen($4->truelist, $4->falselist);}
 							
 							
@@ -461,12 +462,10 @@ Call :			ID LPAREN {ParamListStack.push(vector<Node*>()); } ExpList RPAREN
 								exit(0);
 							}
 							callee->ValidateParameters(vec,symbolTable);
-							
-							
-							//TODO: fix this emitting code
-							a.callSetupGen(-(TmpFuncs.top()->offVar[TmpFuncs.top()->offVar.size()-1].offset));
-							a.callJumpDestroyGen($1->name, -(TmpFuncs.top()->offVar[TmpFuncs.top()->offVar.size()-1].offset));
-                           
+			
+							a.callSetupGen(callee->params.size());
+							a.callJumpDestroyGen($1->name, callee->params.size());
+           
 							$$ = new Node(callee->returnType);	
 							ParamListStack.pop();
 							delete $1;
