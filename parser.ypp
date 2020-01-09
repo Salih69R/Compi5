@@ -87,11 +87,10 @@ FuncDecl :		RetType ID  {
 						
 						
 						}
-						Statements RBRACE 
+						Statements RBRACE CLOSE
 						{	
 							
 							a.funcEndGen($2->name);//TODO: check if need to delete from here or in the function
-							symbolTable.closeScope();
 							delete $1;
 							delete $2;
 						
@@ -398,7 +397,7 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							CodeBuffer::instance().bpatch($3->truelist, $4->name);
 							CodeBuffer::instance().bpatch($3->falselist, CodeBuffer::instance().genLabel());
 						}
-				| IF LPAREN checkBoolExp M RPAREN OPENORMAL Statement CLOSE ELSE OPENORMAL Statement CLOSE
+				| IF LPAREN checkBoolExp M RPAREN OPENORMAL Statement CLOSE ELSE MELSE M OPENORMAL Statement CLOSE
 						{
 							CodeBuffer::instance().bpatch($3->truelist, $4->name);
 							CodeBuffer::instance().bpatch($3->falselist,$11->name);
@@ -406,13 +405,17 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 						}
 				
 				//reached here in adding the a.gen in staetment rules
-				| WHILE LPAREN checkBoolExp 
+				| WHILE LPAREN M checkBoolExp M
 				{
 					
 					 symbolTable.openScope(LOOP);
-				} RPAREN  Statement 									
+					 CodeBuffer::instance().bpatch($4->truelist, $5->name);
+				} RPAREN  Statement CLOSE									
 						{
-							symbolTable.closeScope();
+							
+							 emit("j " + $3->name);//TODO: don't know what this emit code does and why it's needed, recheck this
+							CodeBuffer::instance().bpatch(CodeBuffer::instance().merge($4->falselist,breaks.top()),CodeBuffer::instance().genLabel());
+                     
 						 }
 				| BREAK SC 															
 						{
@@ -421,6 +424,11 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 								errorUnexpectedBreak(yylineno);
 								exit(0);
 							}
+							//TODO: recheck this, we did the break in another way, integrate the emitted code properly
+							a.breakGen();
+							vector<int> aux = CodeBuffer::instance().merge(breaks.top(),CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j ")));
+							breaks.pop();
+							breaks.push(aux);
 						}
 				| CONTINUE SC 														
 						{
@@ -429,6 +437,7 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 								errorUnexpectedContinue(yylineno);
 								exit(0);
 							}
+							//TODO: add emitting code to this rule (not in ref's hw)
 						};
 checkBoolExp :     Exp {
 				
@@ -451,11 +460,16 @@ Call :			ID LPAREN {ParamListStack.push(vector<Node*>()); } ExpList RPAREN
 								delete $1;
 								exit(0);
 							}
-							delete $1;
 							callee->ValidateParameters(vec,symbolTable);
+							
+							
+							//TODO: fix this emitting code
+							a.callSetupGen(-(TmpFuncs.top()->offVar[TmpFuncs.top()->offVar.size()-1].offset));
+							a.callJumpDestroyGen($1->name, -(TmpFuncs.top()->offVar[TmpFuncs.top()->offVar.size()-1].offset));
+                           
 							$$ = new Node(callee->returnType);	
 							ParamListStack.pop();
-
+							delete $1;
 						}
 
 				| ID LPAREN RPAREN 													
@@ -469,17 +483,28 @@ Call :			ID LPAREN {ParamListStack.push(vector<Node*>()); } ExpList RPAREN
 								exit(0);
 							}
 
-							delete $1;
+							
 							auto tmp = vector<Node*>();
+							a.callSetupGen(0);
+							a.callJumpDestroyGen($1->name, 0);
 							callee->ValidateParameters(tmp,symbolTable);
 							$$ = new Node(callee->returnType);
-
+							delete $1;
 						};
 
-ExpList :		Exp 														
-						{ParamListStack.top().push_back($1);}
+ExpList :		Exp //TODO: fix the emitting code, he is using TMpFunc, we are no9t, figure out why and if we need it														
+						{ParamListStack.top().push_back($1);
+						
+                    if($1->name != "BOOL") a.pushNumArgGen(TmpFuncs.top()->offVar[arg_stack.top()->size()-1].offset, $1->reg, $1->size, $1->offset);
+                    else a.pushBoolArgGen(TmpFuncs.top()->offVar[arg_stack.top()->size()-1].offset, $1->truelist, $1->falselist);
+						
+						}
 				| Exp COMMA ExpList 												
-						{ParamListStack.top().push_back($1);};
+						{
+						ParamListStack.top().push_back($1);
+						if($1->name != "BOOL") a.pushNumArgGen(TmpFuncs.top()->offVar[arg_stack.top()->size()-1].offset, $1->reg, $1->size, $1->offset);
+                                else a.pushBoolArgGen(TmpFuncs.top()->offVar[arg_stack.top()->size()-1].offset, $1->truelist, $1->falselist);
+						};
 
 Type :			INT 															
 						{
@@ -493,7 +518,7 @@ Type :			INT
 						
 						$$ = new Node(BOOL_t);};
 
-EnumType :		ENUM ID 													
+EnumType :		ENUM ID 	//TODO: check if need to emit some code here												
 						{Node* var = symbolTable.getVar("enum " + $2->name);
 							if (var == nullptr){
 							
@@ -755,9 +780,18 @@ Exp :			LPAREN Exp RPAREN
 						};
 						
 						
-OPENORMAL:					{symbolTable.openScope(NORMAL);};
-CLOSE:						{symbolTable.closeScope();};
+OPENORMAL:				{
+							symbolTable.openScope(NORMAL);
+							a.openGen();
+						};
+CLOSE:					{
+							symbolTable.closeScope();
+							a.closeGen();
+						};
 
+
+M:      				 {$$ = new Var(CodeBuffer::instance().genLabel());}
+MELSE:					{$$ = new Var(""); $$->truelist = CodeBuffer::instance().makelist(CodeBuffer::instance().emit("j "));}
 
 %%
 
