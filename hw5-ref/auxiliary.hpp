@@ -121,8 +121,8 @@ vector<string> TypeToLvmTypes(vector<TokenType> paramTypes){
 int emit(string s){
     return CodeBuffer::instance().emit(s);
 }
-void emitGlobal(string s){
-    CodeBuffer::instance().emitGlobal(s);
+void emitdata(string s){
+    CodeBuffer::instance().emitData(s);
 }
 
 
@@ -179,9 +179,10 @@ public:
         strs = 0;
         p = regPool();
         frames = vector<int>();
-        emitGlobal("divErr: .asciiz \"Error division by zero\\n\""); //TODO: check if we need these emits here
-        emitGlobal("arrErr: .asciiz \"Error index out of bounds\\n\"");
+        emitdata("divErr: .asciiz \"Error division by zero\\n\""); //TODO: check if we need these emits here
+        emitdata("arrErr: .asciiz \"Error index out of bounds\\n\"");
     }
+	/*
     string genNum(int num){
         string regName = p.regAlloc();
         emit("li " + regName + "," + itos1(num));
@@ -198,7 +199,7 @@ public:
         emit("add $sp,$sp,"+itos1(4*frames.back()));
 
     }
-	
+	*/
 	
 	
 
@@ -217,7 +218,7 @@ public:
         //else emit(id + ":");
 		*/
 		//emit("ignore above");
-		emit("define i" +  return_type + " " + id + "(" +  paramsToString(params)  +   "){" );
+		emit("define " +  return_type + " " + id + "(" +  paramsToString(params)  +   "){" );
 		//emit("ignore below");
 		
 		
@@ -226,6 +227,7 @@ public:
 		
 		
     }
+	/*
     void funcEndGen(string id){
         emit("jr $ra");
         emit(".end " + id + "1");
@@ -248,6 +250,7 @@ public:
         }*/
         //else
         //cout << "here pushing register " << r << " with offset " << offset << endl;
+	/*
         if(size>0){
             string r2 = p.regAlloc();
             for(int i=0; i<size; i++){
@@ -543,7 +546,7 @@ public:
         if(size>0) {
             if (offset < 0) emit("add " + r + "," + r + "," + idx);
             else emit("sub " + r + "," + r + "," + idx);
-        }*/
+        }*//*
         emit("li "+r2+",1");
         emit("sw "+r2+",("+r+")");
         int line = emit("j ");
@@ -567,7 +570,7 @@ public:
         if(size>0) {
             if (offset < 0) emit("add " + r + "," + r + "," + idx);
             else emit("sub " + r + "," + r + "," + idx);
-        }*/
+        }*//*
         emit("sw $0,(" + r + ")");
         l = CodeBuffer::instance().genLabel();
         CodeBuffer::instance().bpatch(CodeBuffer::instance().makelist(line),l);
@@ -599,7 +602,7 @@ public:
         trueList=CodeBuffer::instance().merge(trueList,CodeBuffer::instance().makelist(emit("j ")));
         p.regDealloc(r);
         if(idx!="") p.regDealloc(idx);
-    }
+    }*/
 
 };
 #endif //COMPI_HW5_AUXILARY_H

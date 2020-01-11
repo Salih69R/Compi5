@@ -1,23 +1,16 @@
-void printByValue(bool val) {
-	if (val)
-		print("val is true");
-	else {
-		print("val is false");
-	}
-}
 
-void main() {
-	printByValue(true);
-	printByValue(false);
 
-	if(true)
-    {
-        print("true");
-    }
+int main() {
 
-    if(false or false and  true)
-    {
-        print("true");
-    }
+
+	return 5;
     
 }
+
+
+int fun(int x , bool y ){
+
+
+	return 4;
+}
+

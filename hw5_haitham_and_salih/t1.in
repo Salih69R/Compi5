@@ -1,0 +1,31 @@
+
+int foo1(int asd, bool ere){
+
+return 2;
+}
+int foo(int hai , bool x){
+	
+	
+	
+	int odai = foo1(hai,x);
+//	int odai1 = foo1(hai,x);
+	//int odai2 = foo1(hai,x);
+//	int odai3 = foo1(hai,x);
+//	int odai4 = foo1(hai,x);
+//	int odai5 = foo1(hai,x);
+	return 5;
+}
+
+
+
+void main(){
+
+	int x = 4;
+	int y = x;
+	y=3;
+	y = foo(x,false);
+	int w = foo(2,false);
+	
+	printi(y);
+return;
+}

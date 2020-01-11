@@ -15,16 +15,17 @@ fn_fib_entry.endif:
 
 define i32 @main() {
 entry:
-  %0 = call i32 @fn_fib(i32 10)
-  %1 = call i32 (i8*, ...) @printf(i8* getelementptr ([4 x i8], [4 x i8]* @.intFormat, i32 0, i32 0), i32 %0)
-  %2 = add i32 0, 4
-  %5 = add i32 0, %2
+  call i32 @fn_fib(i32 10)
+  ;%1 = call i32 (i8*, ...) @printf(i8* getelementptr ([4 x i8], [4 x i8]* @.intFormat, i32 0, i32 0), i32 %0)
+  ;%2 = add i32 0, 4
+  ;%3 = add i32 0, %2
+ 
   
 			; alloca i8
 			; store i8 4, i8* %2
   
 
-  %3 = call i32 (i8*, ...) @printf(i8* getelementptr ([4 x i8], [4 x i8]* @.intFormat, i32 0, i32 0) , i32 %2)
+  ;%4 = call i32 (i8*, ...) @printf(i8* getelementptr ([4 x i8], [4 x i8]* @.intFormat, i32 0, i32 0) , i32 %2)
   ret i32 0
 }
 declare i32 @printf(i8*, ...)
