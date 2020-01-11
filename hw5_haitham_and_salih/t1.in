@@ -18,7 +18,7 @@ void main()
 {
 	enum days d = TUESDAY;
 	printi((int)d);
-//	d = SUNDAY;
-//	printi((int)d);
+	d = SUNDAY;
+		printi((int)d);
 	return;
 }

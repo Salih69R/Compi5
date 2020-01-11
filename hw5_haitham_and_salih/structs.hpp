@@ -99,8 +99,8 @@ class Enum_var : public Variable {
 public:
 
 	string enum_type;
-	Enum_var(TokenType type , string name = "" , int offset = 0 , string value = "" , string enum_type = "")
-	: Variable(type,name,offset,value) , enum_type(enum_type){};
+	Enum_var(TokenType type , string name = "" , int offset = 0 , string value = "" , string enum_type = "" , string reg = "")
+	: Variable(type,name,offset,value,reg) , enum_type(enum_type){};
 };
 
 class Function : public Variable{

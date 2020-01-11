@@ -379,14 +379,15 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 								}
 							}
 								var->value = $3->value;
-								
+								//CodeBuffer::instance().emit("name is " + var->name + "value is " + var->value + "reg is " + var->reg);
 							//the name of the func says alloc, but don't worry it doesn't alloc anything
 							if ($3->type == FUNCTION_t)
 								a.Var_Alloc_And_Assign(var->reg,var->type,$3,&args);
 							else if($3->type == ENUM_t){
-								cout << "hi";
+								
 								Enum_class* tmp = symbolTable.FindEnumContains($3->value);
-							
+								//idk why but it is working
+								var->reg = a.Var_Alloc();
 								a.Var_Alloc_And_Assign(var->reg ,INT_t,$3,nullptr,tmp);
 								
 							}else
