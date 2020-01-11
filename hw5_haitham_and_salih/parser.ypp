@@ -250,7 +250,9 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							}
 							//check here abut value
 							var = new Enum_var(ENUM_t,$2->name,0,"",$1->name);
+							
 							symbolTable.insertVar(var);
+							var->reg = a.Var_Alloc();
 
 							delete $2;
 						
@@ -328,6 +330,9 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 								
 								}
 								
+								$2->reg  = a.Var_Alloc();
+								a.Var_Alloc_And_Assign($2->reg ,INT_t,$4,nullptr,tmp);
+								
 							}
 				SC{
 								Enum_var* new_var = new Enum_var(ENUM_t,$2->name,0,$4->value,$1->name);
@@ -373,15 +378,23 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 									exit(0);
 								}
 							}
-							
+								var->value = $3->value;
+								
 							//the name of the func says alloc, but don't worry it doesn't alloc anything
-							if ($3->type != FUNCTION_t)
-								a.Var_Alloc_And_Assign(var->reg,var->type,$3);
-							else{
+							if ($3->type == FUNCTION_t)
 								a.Var_Alloc_And_Assign(var->reg,var->type,$3,&args);
-							}
+							else if($3->type == ENUM_t){
+								cout << "hi";
+								Enum_class* tmp = symbolTable.FindEnumContains($3->value);
 							
-							var->value = $3->value;
+								a.Var_Alloc_And_Assign(var->reg ,INT_t,$3,nullptr,tmp);
+								
+							}else
+								a.Var_Alloc_And_Assign(var->reg,var->type,$3);
+								
+							
+							
+							
 
 							delete $1;
 							
@@ -389,7 +402,7 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 				| Call SC 															
 						{
 						Function* callee = (Function*)$1;
-						a.genCall(callee->name,callee->returnType,callee->paramTypes,args);}
+						a.genCall(callee->name,callee->returnType,callee->paramTypes,args,true);}
 				| RETURN SC 														
 						{
 							auto& scope = symbolTable.scopes_table[symbolTable.scopes_table.size()-1 < 0 ? 0 : symbolTable.scopes_table.size()-1 ];
@@ -427,8 +440,13 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							}
 							
 							
+							if ($2->type == FUNCTION_t){
+								Function* tmp_f = (Function*)$2;
+								a.genReturn(tmp_f->returnType , $2);
+							}else{
+								a.genReturn($2->type , $2);
+							}
 							
-							a.genReturn($2->type , $2);
 						}
 				| IF LPAREN checkBoolExp RPAREN OPENORMAL Statement CLOSE  									
 						{
@@ -488,6 +506,7 @@ Call :			ID LPAREN {ParamListStack.push(vector<Node*>()); } ExpList RPAREN
 							delete $1;
 							
 							callee->ValidateParameters(vec,symbolTable);
+							//callee->reg = callee->reg == "" ? a.RegAlloc() : callee->reg;
 							$$ = callee;	
 							args = vec;
 							ParamListStack.pop();
@@ -507,6 +526,7 @@ Call :			ID LPAREN {ParamListStack.push(vector<Node*>()); } ExpList RPAREN
 
 							delete $1;
 							auto tmp = vector<Node*>();
+							//callee->reg = callee->reg == "" ? a.RegAlloc() : callee->reg;
 							callee->ValidateParameters(tmp,symbolTable);
 							$$ = callee;
 							args=vec;
@@ -745,6 +765,13 @@ Exp :			LPAREN Exp RPAREN
 							Variable* new_int = new Variable(INT_t,enum_var_name,enum_var_offset,enum_var_value);
 							delete $2;
 							$$ = new_int;
+							
+							
+							Enum_class* enum_class = symbolTable.FindEnumContains(enum_var->value);
+							$$->reg = a.Var_Alloc();
+							a.Var_Alloc_And_Assign($$->reg ,INT_t,enum_var,nullptr,enum_class);
+							
+							
 						};
 						
 						

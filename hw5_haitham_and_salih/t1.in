@@ -1,31 +1,24 @@
-
-int foo1(int asd, bool ere){
-
-return 2;
-}
-int foo(int hai , bool x){
-	
-	
-	
-	int odai = foo1(hai,x);
-//	int odai1 = foo1(hai,x);
-	//int odai2 = foo1(hai,x);
-//	int odai3 = foo1(hai,x);
-//	int odai4 = foo1(hai,x);
-//	int odai5 = foo1(hai,x);
-	return 5;
-}
+enum days {SUNDAY, MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY};
+//
+//void checkDay(enum days e1) {
+//	if ((int) e1 == 2) {
+//		print("~IT'S TAAACO TUUUUUUESDAAAAY!~");
+//		print("One taco for me please!");
+//		int i = 0;
+//		while (i < (int) e1) {
+//			print("Another taco for me please!");
+//			i = i + 1;
+//		}
+//	}
+//}
+//*/
 
 
-
-void main(){
-
-	int x = 4;
-	int y = x;
-	y=3;
-	y = foo(x,false);
-	int w = foo(2,false);
-	
-	printi(y);
-return;
+void main()
+{
+	enum days d = TUESDAY;
+	printi((int)d);
+//	d = SUNDAY;
+//	printi((int)d);
+	return;
 }

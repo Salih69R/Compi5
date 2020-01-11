@@ -73,6 +73,7 @@ string TokenTypeToLlvmType(TokenType type){
 			case INT_t:   	return "i32"	; break;
 			case BYTE_t:   	return "i8"	; break;
 			case VOID_t:   	return "void"	; break;
+			case ENUM_t:   	return "i32"	; break;
 			default : cout << "error in TypeToLvmTypes, type is : " << type << endl;
 			exit(0);
 			break;
@@ -239,7 +240,7 @@ public:
 	
 	
 	//despite it's name, doesn't really alloc anything
-	void Var_Alloc_And_Assign(string r1,TokenType r1_type,Node* r2,vector<Node*>* reg_args = nullptr){
+	void Var_Alloc_And_Assign(string r1,TokenType r1_type,Node* r2,vector<Node*>* reg_args = nullptr,Enum_class* tmp = nullptr){
 		
 		
 		//cout<< "r1_type -> " << r1_type << endl;
@@ -247,13 +248,22 @@ public:
 		
 		if(r2->type != FUNCTION_t){
 			line = r2->is_Var ? TokenTypeToLlvmType(r2->type)+ "* " + r2->reg   : TokenTypeToLlvmType(r2->type) + " "+ r2->value; 
-			if(r2->is_Var){
+			
+			if(r2->type == ENUM_t){
+			int ordered_num = get_enum_valued_order(tmp->enum_vals,r2->value);	
+				CodeBuffer::instance().emit("	store i32 " + to_string(ordered_num) + " , i32*" + " "+r1); 
+				return;
+				
+			}
+			
+			else if(r2->is_Var){
 				tmp_reg =RegAlloc();
 				load_str = tmp_reg + " = " + "load " + TokenTypeToLlvmType(r2->type) + " , " + line;
 				line = TokenTypeToLlvmType(r2->type)+ " " + tmp_reg;
 				CodeBuffer::instance().emit("	" + load_str);
 			}
-			CodeBuffer::instance().emit("	store " + line + " , " + TokenTypeToLlvmType(r1_type) + "* " + r1);//"	"+ r1 + " = add " + TokenTypeToLlvmType(r1_type) + " 0 , " + r2_val);
+				CodeBuffer::instance().emit("	store " + line + " , " + TokenTypeToLlvmType(r1_type) + "* " + r1);
+			
 		}
 		else{
 			Function* f = (Function*)r2;
@@ -300,13 +310,27 @@ public:
 		if (fun_ret_type == VOID_t){
 			CodeBuffer::instance().emit("	ret void");
 			
+		}else if (val->is_Var){
+				if (val->type == FUNCTION_t){
+					val->reg = RegAlloc();
+				}
+				string line = TokenTypeToLlvmType(fun_ret_type) + "* " + val->reg;
+				string tmp_reg =RegAlloc();
+				string load_str = tmp_reg + " = " + "load " + TokenTypeToLlvmType(fun_ret_type) + " , " + line;
+				
+				CodeBuffer::instance().emit("	" + load_str);
+				
+			
+			CodeBuffer::instance().emit("	ret " + TokenTypeToLlvmType(fun_ret_type) + " " + tmp_reg);
 		}else{
-			string ret_val = val->is_Var ? val->reg : val->value; 
-			CodeBuffer::instance().emit("	ret " + TokenTypeToLlvmType(fun_ret_type) + " " + ret_val);
+			CodeBuffer::instance().emit("	ret " + TokenTypeToLlvmType(fun_ret_type) + " " + val->value);
+
 		}
 	}
 	
-	void genCall(string fun_id , TokenType fun_retype , vector<TokenType> params , vector<Node*> reg_args){
+	void genCall(string fun_id , TokenType fun_retype , vector<TokenType> params , vector<Node*> reg_args , bool flag = true){
+		if (flag == false)
+			return;
 		
 		string tmp_reg, load_str, line;//helper strings
 		vector<Node*> args = vector<Node*>();
@@ -325,7 +349,7 @@ public:
 					args.push_back(node);
 					to_del_args.push_back(node);
 
-					//CodeBuffer::instance().emit("			/////   	i->name = " + i->name + " tmp reg = " + tmp_reg );
+					
 				}else{
 					args.push_back(i);				
 				}			
