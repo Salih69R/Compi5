@@ -56,6 +56,23 @@ vector<string> modifiedTokensToString(vector<TokenType>& vec , vector<Variable*>
 
 
 
+	int get_enum_valued_order(Enum_var* var){
+		
+		Enum_class* Eclass = var->enum_class;
+		
+		for(int i = 0 ; i < Eclass->enum_vals.size() ; i++){
+			
+			if (Eclass->enum_vals[i] == var->value){
+				return i;
+			}
+		}
+		
+	//	cout << "Error in get_enum_valued_order" << endl;
+	//	cout << "var->name = " << var->name << "		var->value = " << var->value <<endl;
+	//	cout << "treated as default, returned 0" << endl;
+		return 0;
+	}
+
 
 
 void p_stack(stack<Variable*> st){

@@ -45,7 +45,8 @@ typedef enum tokentype_t { VOID_t ,Enumerator_t, INT_t , ENUM_t , ENUM_CLASS_t,
 
 /******************************************************************************/
 
-
+class Enum_var;
+int get_enum_valued_order(Enum_var* var);
 
 /******************************************************************************/
 /**
@@ -95,12 +96,23 @@ public:
     bool contains(string val);
 };
 
+
+
 class Enum_var : public Variable {
 public:
 
 	string enum_type;
-	Enum_var(TokenType type , string name = "" , int offset = 0 , string value = "" , string enum_type = "" , string reg = "")
-	: Variable(type,name,offset,value,reg) , enum_type(enum_type){};
+	Enum_class* enum_class;
+	Enum_var(TokenType type , Enum_class* enum_class , string name = "" , int offset = 0 , string value = "" , string reg = "")
+	: Variable(type,name,offset,value,reg) 
+	{
+		if(enum_class == nullptr){
+			cout << "		Error in Enum_Var cons, containing class is nullptr" << endl;
+			exit(0);
+		}
+		this->enum_class = enum_class;
+		enum_type = enum_class->name;
+	};
 };
 
 class Function : public Variable{

@@ -173,7 +173,7 @@ FormalDecl :	Type ID
 							delete $1;
 							exit(0);
 							}
-							curFunc->addParam(new Enum_var(ENUM_t,$2->name,0,"",$1->name));
+							curFunc->addParam(new Enum_var(ENUM_t, (Enum_class*) $1, $2->name,0,""));
 							$2->type = $1->type;
 						
 						};
@@ -249,7 +249,7 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 								exit(0);
 							}
 							//check here abut value
-							var = new Enum_var(ENUM_t,$2->name,0,"",$1->name);
+							var = new Enum_var(ENUM_t, (Enum_class*) $1  , $2->name,0,"");
 							
 							symbolTable.insertVar(var);
 							var->reg = a.Var_Alloc();
@@ -296,7 +296,6 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							
 							
 							var = new Variable($1->type,$2->name);
-							int size = symbolTable.scopes_table.size();
 							var->reg = a.Var_Alloc(var->type);
 							if ($4->type != FUNCTION_t)
 								a.Var_Alloc_And_Assign(var->reg,$1->type,$4);
@@ -333,13 +332,13 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 									exit(0);		
 								
 								}
-								
+								//TODO: check if exp is function
 								$2->reg  = a.Var_Alloc();
-								a.Var_Alloc_And_Assign($2->reg ,INT_t,$4,nullptr,tmp);
+								a.Var_Alloc_And_Assign($2->reg ,INT_t,$4,nullptr);
 								
 							}
 				SC{
-								Enum_var* new_var = new Enum_var(ENUM_t,$2->name,0,$4->value,$1->name);
+								Enum_var* new_var = new Enum_var(ENUM_t, (Enum_class*) $1   ,$2->name,0,$4->value);
 										symbolTable.insertVar(new_var);
 										
 										delete $2;
@@ -390,10 +389,10 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 								a.Var_Alloc_And_Assign(var->reg,var->type,$3,&args);
 							else if($3->type == ENUM_t){
 								
-								Enum_class* tmp = symbolTable.FindEnumContains($3->value);
+							//	Enum_class* tmp = symbolTable.FindEnumContains($3->value);
 								//idk why but it is working
 								var->reg = a.Var_Alloc();
-								a.Var_Alloc_And_Assign(var->reg ,INT_t,$3,nullptr,tmp);
+								a.Var_Alloc_And_Assign(var->reg ,INT_t,$3,nullptr);
 								
 							}else
 								a.Var_Alloc_And_Assign(var->reg,var->type,$3);
@@ -626,7 +625,7 @@ Exp :			LPAREN Exp RPAREN
 						if (symbolTable.isThereEnumContains($1->name) && var == nullptr){
 
 							auto tmp = symbolTable.FindEnumContains($1->name);//we know this isn't nullptr for sure
-							$$ = new Enum_var(ENUM_t,$1->name,0,$1->name,tmp->name);
+							$$ = new Enum_var(ENUM_t,  tmp,  $1->name,0,$1->name);
 							
 							//TODO: add emit code for enum case, if needed(im guessing yes needed)
 						}
@@ -772,9 +771,9 @@ Exp :			LPAREN Exp RPAREN
 							$$ = new_int;
 							
 							
-							Enum_class* enum_class = symbolTable.FindEnumContains(enum_var->value);
+							//Enum_class* enum_class = symbolTable.FindEnumContains(enum_var->value);
 							$$->reg = a.Var_Alloc();
-							a.Var_Alloc_And_Assign($$->reg ,INT_t,enum_var,nullptr,enum_class);
+							a.Var_Alloc_And_Assign($$->reg ,INT_t,enum_var,nullptr);
 							
 							
 						};

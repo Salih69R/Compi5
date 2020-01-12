@@ -155,13 +155,29 @@ public:
 	
 	
 	
-    void regDeallocAll(){
-        for(int i=0; i<REG_NUM; i++)
-                isAvail[i] = true;
+    void regDeallocAll(int exept_first_n_regs = 0){
+		
+		for(int i = 0; i < exept_first_n_regs; i++)
+			isAvail[i] = false;
+		
+        for(int i= exept_first_n_regs ; i<REG_NUM; i++)
+            isAvail[i] = true;
         }
     
 
 };
+
+
+
+
+
+
+
+
+
+
+
+//-------------------------------------------------------------------------------------------------
 
 class Genreator{
 
@@ -201,6 +217,8 @@ public:
 		//now save the params on stack in order to allow changing them inside the function
 		int size = params.size();
 		string reg_i;
+		
+		clear_regs(size);
 		for(int i = 0; i < size; ++i){//param i is saved in reg %i at this point
 			
 			reg_i = Var_Alloc(args[i]->type);
@@ -228,19 +246,21 @@ public:
 		
 		return reg;
 	}
+	
 	string RegAlloc(){
 		return pool.regAlloc();
 	}
 	
 	
-	void clear_regs(){
+	void clear_regs(int exept_first_n_regs = 0){
 		
-		pool.regDeallocAll();
+		pool.regDeallocAll(exept_first_n_regs);
 	}
 	
 	
 	//despite it's name, doesn't really alloc anything
-	void Var_Alloc_And_Assign(string r1,TokenType r1_type,Node* r2,vector<Node*>* reg_args = nullptr,Enum_class* tmp = nullptr){
+	void Var_Alloc_And_Assign(string r1,TokenType r1_type,Node* r2,vector<Node*>* reg_args = nullptr)
+	{
 		
 		
 		//cout<< "r1_type -> " << r1_type << endl;
@@ -250,7 +270,7 @@ public:
 			line = r2->is_Var ? TokenTypeToLlvmType(r2->type)+ "* " + r2->reg   : TokenTypeToLlvmType(r2->type) + " "+ r2->value; 
 			
 			if(r2->type == ENUM_t){
-			int ordered_num = get_enum_valued_order(tmp->enum_vals,r2->value);	
+			int ordered_num = get_enum_valued_order( (Enum_var*) r2);	
 				CodeBuffer::instance().emit("	store i32 " + to_string(ordered_num) + " , i32*" + " "+r1); 
 				return;
 				
@@ -276,18 +296,20 @@ public:
 			Variable* node;
 			for(auto i : *reg_args){
 				
-				if(i->is_Var){
+				//if(i->type == ENUM_t){
+				//get ordered num of the enum value, 
+				// TODO: 
+				//} else
+				 if(i->is_Var){
 					tmp_reg =RegAlloc();
 					line = TokenTypeToLlvmType(i->type)+ "* " + i->reg;
 					load_str = tmp_reg + " = " + "load " + TokenTypeToLlvmType(i->type) + " , " + line;
-					line = TokenTypeToLlvmType(i->type)+ " " + tmp_reg;
+					
 					CodeBuffer::instance().emit("	" + load_str);
 
 					node =new Variable(i->type, i->name, 1, i->value, tmp_reg);//we sent offset = 1 cause fuck offsets
 					args.push_back(node);
 					to_del_args.push_back(node);
-
-					//CodeBuffer::instance().emit("			/////   	i->name = " + i->name + " tmp reg = " + tmp_reg );
 				}else{
 					args.push_back(i);				
 				}			
@@ -297,11 +319,12 @@ public:
 			tmp_reg = RegAlloc();
 			CodeBuffer::instance().emit("	"+ tmp_reg + " = " + "call " + TokenTypeToLlvmType(ret_type) + " @" + fun_id + "(" + print_args(params,args) + ")");
 			CodeBuffer::instance().emit("	store " + TokenTypeToLlvmType(ret_type) + " " + tmp_reg + " , " + TokenTypeToLlvmType(r1_type) + "* " + r1);
+			
+			//free all tmp nodes
 			for(int i = 0; i < to_del_args.size(); ++i)
 				delete to_del_args[i];
 		
 		}
-	
 	
 	}
 	
@@ -337,8 +360,11 @@ public:
 		vector<Node*> to_del_args = vector<Node*>();
 		Variable* node;
 			for(auto i : reg_args){
-				
-				if(i->is_Var){
+				if(i->type == ENUM_t){
+					i->reg = to_string( get_enum_valued_order( (Enum_var*)  i) );   //notice that we do not need another register for an enum variable, we use it's own variable
+					args.push_back(i);
+				}
+				else if(i->is_Var){
 					tmp_reg =RegAlloc();
 					line = TokenTypeToLlvmType(i->type)+ "* " + i->reg;
 					load_str = tmp_reg + " = " + "load " + TokenTypeToLlvmType(i->type) + " , " + line;
@@ -403,18 +429,7 @@ public:
 	
 	//-------------------------------------Enum-stuff ------------------------------//
 	
-	int get_enum_valued_order(vector<string> enum_vals , string val){
-		
-		for(int i = 0 ; i < enum_vals.size() ; i++){
-			
-			if (enum_vals[i] == val){
-				return i;
-			}
-		}
-		
-		cout << "Error in get_enum_valued_oreder" << endl;
-		exit(0);
-	}
+
 	
 	void assign_enum_var();
 	
