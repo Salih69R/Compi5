@@ -310,7 +310,8 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							
 						}
 				| EnumType ID ASSIGN Exp { 
-								Variable* var = symbolTable.getVar($2->name);
+							
+							Variable* var = symbolTable.getVar($2->name);
 							Variable* var_as_class = symbolTable.getVar("enum "+$2->name);
 							if(var != nullptr || symbolTable.isThereEnumContains($2->name) || var_as_class != nullptr){
 							
@@ -322,7 +323,10 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							}
 								
 								auto tmp = (Enum_class*)$1;
-								if ((! tmp->contains($4->name))   ){
+								auto var_to_assign =symbolTable.getVar($4->name);
+								if ((! tmp->contains($4->name)) && !(tmp->contains(var_to_assign->value))   ){
+								
+									cout << "tmp->name = " << tmp->name << "  , $4->name = " << $4->name  << "  v_t_a->value = "<< var_to_assign->value << endl;
 									errorUndefEnumValue(yylineno,$2->name);
 									delete $2;
 											
@@ -373,7 +377,8 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							if(var->type == ENUM_t && ($3->type == ENUM_t || $3->type == INT_t || $3->type == BYTE_t || $3->type == BOOL_t|| $3->type == STRING_t || $3->type == VOID_t)){
 								auto tmp = (Enum_var*)var;
 								auto tmp_class = (Enum_class*)symbolTable.getVar(tmp->enum_type);
-								if (tmp_class == nullptr || (!tmp_class->contains($3->name))){
+								auto var_to_assign =symbolTable.getVar($3->name);
+								if (tmp_class == nullptr || (!tmp_class->contains($3->name)   &&  !(tmp_class->contains(var_to_assign->value))  )){
 									errorUndefEnumValue(yylineno,var->name);
 									exit(0);
 								}
@@ -556,10 +561,9 @@ Type :			INT
 EnumType :		ENUM ID 													
 						{Node* var = symbolTable.getVar("enum " + $2->name);
 							if (var == nullptr){
-							
-							errorUndefEnum(yylineno, $2->name);
-							delete $2;
-							exit(0);
+								errorUndefEnum(yylineno, $2->name);
+								delete $2;
+								exit(0);
 							}
 							delete $2;
 							$$ = var;

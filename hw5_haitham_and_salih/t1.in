@@ -1,4 +1,7 @@
 enum days {SUNDAY, MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY};
+
+
+
 //
 //void checkDay(enum days e1) {
 //	if ((int) e1 == 2) {
@@ -19,6 +22,12 @@ void main()
 	enum days d = TUESDAY;
 	printi((int)d);
 	d = SUNDAY;
-		printi((int)d);
+	printi((int)d);
+	
+	//enum days d2 = d;
+	enum days d2;
+	d2 = d;
+	
+	printi((int)d2);
 	return;
 }
