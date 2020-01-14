@@ -20,6 +20,7 @@
 	stack<vector<Node*>> ParamListStack = stack<vector<Node*>>();
 	Genreator a = Genreator();
 	vector<Node*> args = vector<Node*>(); // this is for call
+	bool return_flag = true;
 	
 	
 	
@@ -56,6 +57,7 @@ Funcs :			/*epsilon*/
 
 
 FuncDecl :		RetType ID  {
+							return_flag = true;
 							Variable* var = symbolTable.getVar($2->name);
 							Variable* var_as_class = symbolTable.getVar("enum "+$2->name);
 							if(var != nullptr || symbolTable.isThereEnumContains($2->name) || var_as_class != nullptr){
@@ -84,7 +86,11 @@ FuncDecl :		RetType ID  {
 						
 						
 						}
-						Statements RBRACE 
+						Statements {
+							if (return_flag){
+								a.genReturn(curFunc);
+							}
+							} RBRACE 
 						{	
 							
 							CodeBuffer::instance().emit("}");
@@ -92,6 +98,8 @@ FuncDecl :		RetType ID  {
 							symbolTable.closeScope();
 							delete $1;
 							delete $2;
+							
+							
 							
 						
 						
@@ -417,6 +425,7 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							}
 							
 							a.genReturn(scope.curFunc);
+							return_flag = false;
 						}
 				| RETURN Exp SC 													
 						{
@@ -444,6 +453,7 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							
 							
 							a.genReturn(f , $2);
+							return_flag = false;
 							
 							
 						}
