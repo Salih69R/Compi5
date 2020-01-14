@@ -388,9 +388,7 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							if ($3->type == FUNCTION_t)
 								a.Var_Alloc_And_Assign(var->reg,var->type,$3,&args);
 							else if($3->type == ENUM_t){
-								
-							//	Enum_class* tmp = symbolTable.FindEnumContains($3->value);
-								//idk why but it is working
+							
 								var->reg = a.Var_Alloc();
 								a.Var_Alloc_And_Assign(var->reg ,INT_t,$3,nullptr);
 								
@@ -406,8 +404,8 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 						}
 				| Call SC 															
 						{
-						Function* callee = (Function*)$1;
-						a.genCall(callee->name,callee->returnType,callee->paramTypes,args,true);}
+						
+						}
 				| RETURN SC 														
 						{
 							auto& scope = symbolTable.scopes_table[symbolTable.scopes_table.size()-1 < 0 ? 0 : symbolTable.scopes_table.size()-1 ];
@@ -418,7 +416,7 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 								exit(0);
 							}
 							
-							a.genReturn(VOID_t);
+							a.genReturn(scope.curFunc);
 						}
 				| RETURN Exp SC 													
 						{
@@ -438,19 +436,15 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 								
 								Function* exp_f = (Function*)$2;
 								if(f->returnType != exp_f->returnType && (!(f->returnType == INT_t  && exp_f->returnType == BYTE_t  )) ){
-								errorMismatch(yylineno);
-								exit(0);
+									errorMismatch(yylineno);
+									exit(0);
 								}
 								
 							}
 							
 							
-							if ($2->type == FUNCTION_t){
-								Function* tmp_f = (Function*)$2;
-								a.genReturn(tmp_f->returnType , $2);
-							}else{
-								a.genReturn($2->type , $2);
-							}
+							a.genReturn(f , $2);
+							
 							
 						}
 				| IF LPAREN checkBoolExp RPAREN OPENORMAL Statement CLOSE  									
@@ -501,6 +495,8 @@ Call :			ID LPAREN {ParamListStack.push(vector<Node*>()); } ExpList RPAREN
 							Function* callee = (Function*)symbolTable.getVar($1->name);
 							auto& vec = ParamListStack.top();
 
+
+
 							if (callee == nullptr || callee->type != FUNCTION_t){
 								
 								errorUndefFunc(yylineno, $1->name);
@@ -511,9 +507,13 @@ Call :			ID LPAREN {ParamListStack.push(vector<Node*>()); } ExpList RPAREN
 							delete $1;
 							
 							callee->ValidateParameters(vec,symbolTable);
-							//callee->reg = callee->reg == "" ? a.RegAlloc() : callee->reg;
-							$$ = callee;	
+							
 							args = vec;
+							
+							
+							callee->reg = a.genCall(callee->name,callee->returnType,callee->paramTypes,args);
+							$$ = callee;
+							
 							ParamListStack.pop();
 							
 						}
@@ -522,6 +522,8 @@ Call :			ID LPAREN {ParamListStack.push(vector<Node*>()); } ExpList RPAREN
 						{	
 							Function* callee = (Function*)symbolTable.getVar($1->name);
 							auto vec = vector<Node*>();
+							
+							
 							if (callee == nullptr || callee->type != FUNCTION_t){
 								
 								errorUndefFunc(yylineno, $1->name);
@@ -530,12 +532,13 @@ Call :			ID LPAREN {ParamListStack.push(vector<Node*>()); } ExpList RPAREN
 							}
 
 							delete $1;
-							auto tmp = vector<Node*>();
-							//callee->reg = callee->reg == "" ? a.RegAlloc() : callee->reg;
-							callee->ValidateParameters(tmp,symbolTable);
+							
+							
 							$$ = callee;
 							args=vec;
 							
+							callee->ValidateParameters(vec,symbolTable);
+							callee->reg = a.genCall(callee->name,callee->returnType,callee->paramTypes,args);
 							
 
 						};
@@ -639,7 +642,21 @@ Exp :			LPAREN Exp RPAREN
 				| Call 																
 					{
 						
-						$$ = $1;
+						
+						Function* callee = (Function*)$1;
+						
+						
+						
+						//a.Var_Alloc_And_Assign($$->reg,callee->returnType,callee,&args);
+						
+						
+						//a.genCall(callee->name,callee->returnType,callee->paramTypes,args,true);
+						//$$ = new Node( ((Function*)$1)->returnType , "" , callee->value , a.RegAlloc());
+						
+						
+						
+						
+						
 					}
 
 				| NUM 																

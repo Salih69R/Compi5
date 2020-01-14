@@ -65,8 +65,9 @@ string paramsToString(vector<string> args){
 }
 	
 	
-string TokenTypeToLlvmType(TokenType type){
+string TokenTypeToLlvmType(TokenType type, Node* node_in_case_type_can_be_function = nullptr){
 	
+	Function* f = (Function*) node_in_case_type_can_be_function;
 	switch(type){
 			
 			case BOOL_t: 	return "i1"   ; break;
@@ -74,6 +75,7 @@ string TokenTypeToLlvmType(TokenType type){
 			case BYTE_t:   	return "i8"	; break;
 			case VOID_t:   	return "void"	; break;
 			case ENUM_t:   	return "i32"	; break;
+			case FUNCTION_t: return TokenTypeToLlvmType(f->returnType); break;
 			default : cout << "error in TypeToLvmTypes, type is : " << type << endl;
 			exit(0);
 			break;
@@ -258,78 +260,67 @@ public:
 	}
 	
 	
-	//despite it's name, doesn't really alloc anything
-	void Var_Alloc_And_Assign(string r1,TokenType r1_type,Node* r2,vector<Node*>* reg_args = nullptr)
-	{
+	
+	
+	string genCall(string fun_id , TokenType fun_retype , vector<TokenType> params , vector<Node*> reg_args){
 		
-		
-		//cout<< "r1_type -> " << r1_type << endl;
 		string tmp_reg, load_str, line;//helper strings
 		
-		if(r2->type != FUNCTION_t){
-			line = r2->is_Var ? TokenTypeToLlvmType(r2->type)+ "* " + r2->reg   : TokenTypeToLlvmType(r2->type) + " "+ r2->value; 
-			
-			if(r2->type == ENUM_t){
-			int ordered_num = get_enum_valued_order( (Enum_var*) r2);	
-				CodeBuffer::instance().emit("	store i32 " + to_string(ordered_num) + " , i32*" + " "+r1); 
-				return;
-				
-			}
-			
-			else if(r2->is_Var){
-				tmp_reg =RegAlloc();
-				load_str = tmp_reg + " = " + "load " + TokenTypeToLlvmType(r2->type) + " , " + line;
-				line = TokenTypeToLlvmType(r2->type)+ " " + tmp_reg;
-				CodeBuffer::instance().emit("	" + load_str);
-			}
-				CodeBuffer::instance().emit("	store " + line + " , " + TokenTypeToLlvmType(r1_type) + "* " + r1);
-			
-		}
-		else{
-			Function* f = (Function*)r2;
-			string fun_id = f->name;
-			TokenType ret_type= f->returnType;
-			vector<TokenType> params = f->paramTypes;
-			vector<Node*> args = vector<Node*>();
-			vector<Node*> to_del_args = vector<Node*>();
-			
-			Variable* node;
-			for(auto i : *reg_args){
-				
-				//if(i->type == ENUM_t){
-				//get ordered num of the enum value, 
-				// TODO: 
-				//} else
-				 if(i->is_Var){
-					tmp_reg =RegAlloc();
-					line = TokenTypeToLlvmType(i->type)+ "* " + i->reg;
-					load_str = tmp_reg + " = " + "load " + TokenTypeToLlvmType(i->type) + " , " + line;
-					
-					CodeBuffer::instance().emit("	" + load_str);
-
-					node =new Variable(i->type, i->name, 1, i->value, tmp_reg);//we sent offset = 1 cause fuck offsets
-					args.push_back(node);
-					to_del_args.push_back(node);
-				}else{
-					args.push_back(i);				
-				}			
-			}
+		if (reg_args.size() == 0){
 			
 			
 			tmp_reg = RegAlloc();
-			CodeBuffer::instance().emit("	"+ tmp_reg + " = " + "call " + TokenTypeToLlvmType(ret_type) + " @" + fun_id + "(" + print_args(params,args) + ")");
-			CodeBuffer::instance().emit("	store " + TokenTypeToLlvmType(ret_type) + " " + tmp_reg + " , " + TokenTypeToLlvmType(r1_type) + "* " + r1);
+			CodeBuffer::instance().emit("	" + tmp_reg + " = call " + TokenTypeToLlvmType(fun_retype) + " @" + fun_id + "( )");
 			
-			//free all tmp nodes
-			for(int i = 0; i < to_del_args.size(); ++i)
-				delete to_del_args[i];
-		
+			return tmp_reg;
+			
 		}
-	
+		
+		
+		vector<Node*> args = vector<Node*>();
+		vector<Node*> to_del_args = vector<Node*>();
+		Variable* node;
+		for(auto i : reg_args){
+			if(i->type == ENUM_t){
+				i->reg = to_string( get_enum_valued_order( (Enum_var*)  i) );   //notice that we do not need another register for an enum variable, we use it's own variable
+				args.push_back(i);
+			}
+			else if(i->is_Var && i->type != FUNCTION_t){
+				tmp_reg =RegAlloc();
+				line = TokenTypeToLlvmType(i->type, i)+ "* " + i->reg;
+				load_str = tmp_reg + " = " + "load " + TokenTypeToLlvmType(i->type, i) + " , " + line;
+				CodeBuffer::instance().emit("	" + load_str);
+
+				node =new Variable(i->type, i->name, 1, i->value, tmp_reg);//we sent offset = 1 cause fuck offsets
+				args.push_back(node);
+				to_del_args.push_back(node);
+
+					
+			}else{
+				args.push_back(i);				
+			}			
+		}
+		tmp_reg = RegAlloc();
+		if( fun_retype == VOID_t)
+			
+			CodeBuffer::instance().emit("	call " + TokenTypeToLlvmType(fun_retype) + " @" + fun_id + "(" + print_args(params,args) + ")");
+		else
+			CodeBuffer::instance().emit("	" + tmp_reg + " = call " + TokenTypeToLlvmType(fun_retype) + " @" + fun_id + "(" + print_args(params,args) + ")");
+		
+		
+		for(int i = 0; i < to_del_args.size(); ++i)
+				delete to_del_args[i];
+			
+		return tmp_reg;
 	}
 	
-	void genReturn(TokenType fun_ret_type , Node* val = nullptr){
+	
+	
+	void genReturn(Function* func , Node* val = nullptr){
 		
+		TokenType fun_ret_type = func->returnType;
+	
+	
 		if (fun_ret_type == VOID_t){
 			CodeBuffer::instance().emit("	ret void");
 			
@@ -343,48 +334,59 @@ public:
 				
 				CodeBuffer::instance().emit("	" + load_str);
 				
-			
+			func->reg = tmp_reg;
 			CodeBuffer::instance().emit("	ret " + TokenTypeToLlvmType(fun_ret_type) + " " + tmp_reg);
 		}else{
+			func->reg = val->value;
 			CodeBuffer::instance().emit("	ret " + TokenTypeToLlvmType(fun_ret_type) + " " + val->value);
 
 		}
 	}
 	
-	void genCall(string fun_id , TokenType fun_retype , vector<TokenType> params , vector<Node*> reg_args , bool flag = true){
-		if (flag == false)
-			return;
+	
+	
+	
+	//despite it's name, doesn't really alloc anything
+	void Var_Alloc_And_Assign(string r1,TokenType r1_type,Node* r2,vector<Node*>* reg_args = nullptr)
+	{
 		
+		
+		//cout<< "r1_type -> " << r1_type << endl;
 		string tmp_reg, load_str, line;//helper strings
-		vector<Node*> args = vector<Node*>();
-		vector<Node*> to_del_args = vector<Node*>();
-		Variable* node;
-			for(auto i : reg_args){
-				if(i->type == ENUM_t){
-					i->reg = to_string( get_enum_valued_order( (Enum_var*)  i) );   //notice that we do not need another register for an enum variable, we use it's own variable
-					args.push_back(i);
-				}
-				else if(i->is_Var){
-					tmp_reg =RegAlloc();
-					line = TokenTypeToLlvmType(i->type)+ "* " + i->reg;
-					load_str = tmp_reg + " = " + "load " + TokenTypeToLlvmType(i->type) + " , " + line;
-					line = TokenTypeToLlvmType(i->type)+ " " + tmp_reg;
-					CodeBuffer::instance().emit("	" + load_str);
-
-					node =new Variable(i->type, i->name, 1, i->value, tmp_reg);//we sent offset = 1 cause fuck offsets
-					args.push_back(node);
-					to_del_args.push_back(node);
-
-					
-				}else{
-					args.push_back(i);				
-				}			
+		
+		if(r2->type != FUNCTION_t){
+			line = r2->is_Var ? TokenTypeToLlvmType(r2->type, r2)+ "* " + r2->reg   : TokenTypeToLlvmType(r2->type, r2) + " "+ r2->value; 
+			
+			if(r2->type == ENUM_t){
+			int ordered_num = get_enum_valued_order( (Enum_var*) r2);	
+				CodeBuffer::instance().emit("	store i32 " + to_string(ordered_num) + " , i32*" + " "+r1); 
+				return;
+				
 			}
 			
-		CodeBuffer::instance().emit("	call " + TokenTypeToLlvmType(fun_retype) + " @" + fun_id + "(" + print_args(params,args) + ")");
-		for(int i = 0; i < to_del_args.size(); ++i)
-				delete to_del_args[i];
+			else if(r2->is_Var){
+				tmp_reg =RegAlloc();
+				load_str = tmp_reg + " = " + "load " + TokenTypeToLlvmType(r2->type, r2) + " , " + line;
+				line = TokenTypeToLlvmType(r2->type, r2)+ " " + tmp_reg;
+				CodeBuffer::instance().emit("	" + load_str);
+			}
+				CodeBuffer::instance().emit("	store " + line + " , " + TokenTypeToLlvmType(r1_type, r2) + "* " + r1);
+			
+		}
+		else{
+			Function* f = (Function*)r2;
+			string fun_id = f->name;
+			TokenType ret_type= f->returnType;
+			vector<TokenType> params = f->paramTypes;
+			
+		//	f->reg = genCall(fun_id, ret_type, params, *reg_args);
+			CodeBuffer::instance().emit("	store " + TokenTypeToLlvmType(ret_type) + " " + f->reg + " , " + TokenTypeToLlvmType(r1_type) + "* " + r1);
+			
+		
+		}
+	
 	}
+	
 	
 	
 	

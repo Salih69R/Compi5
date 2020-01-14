@@ -2,54 +2,22 @@ enum days {SUNDAY, MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY};
 
 
 
-
-void checkDay(enum days e1) {
-	
-	printi((int)e1);
-	return;
-	
-	
-	//if there is no return in a void function do it doesn't work,
-	//to make it work got to } in the grammar and check if rettype of function is void and emit cod for ret
+int getOne(){
+	int a = 1;
+	return a;
 }
-
-
-
-//TODO: fix returning an enum if it was a val, a var, and a function call
-//enum days makeDay(){
-
-	//retun SUNDAY;
-//}
-
-
-
 
 
 void main()
 {
-	enum days d = TUESDAY;
-	//printi((int)d);
-	
+
 	
 //TODO: fix call with a call as an argument
-	checkDay(d);
-	
-	
-	//d = SUNDAY;
-	//printi((int)d);
-	
-	//enum days d2 = d;
-	
-	//enum days d2;
-	//d2 = d;
-	//printi((int)d2);
-	
-	
-	
-	//TODO: fix assign of func that returns enum
-	
-	
-	
-	
+
+
+	//int a = getOne();
+	printi( getOne() );
+
+
 	return;
 }
