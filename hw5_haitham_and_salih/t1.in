@@ -15,8 +15,18 @@ void main()
 //TODO: fix call with a call as an argument
 
 
-	//int a = getOne();
+	int a = getOne();
 	printi( getOne() );
+	//print("haitham asdasdads work please?");
+	int layah=5;
+	int samaher=getOne();
+	int hodah = layah;
+		printi( layah );
+	printi( hodah );
+	printi( samaher);
+
+	
+	
 
 
 	

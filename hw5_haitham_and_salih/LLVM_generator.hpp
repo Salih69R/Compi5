@@ -300,13 +300,14 @@ public:
 				args.push_back(i);				
 			}			
 		}
-		tmp_reg = RegAlloc();
+		
 		if( fun_retype == VOID_t)
 			
 			CodeBuffer::instance().emit("	call " + TokenTypeToLlvmType(fun_retype) + " @" + fun_id + "(" + print_args(params,args) + ")");
-		else
+		else{
+			tmp_reg = RegAlloc();
 			CodeBuffer::instance().emit("	" + tmp_reg + " = call " + TokenTypeToLlvmType(fun_retype) + " @" + fun_id + "(" + print_args(params,args) + ")");
-		
+		}
 		
 		for(int i = 0; i < to_del_args.size(); ++i)
 				delete to_del_args[i];
