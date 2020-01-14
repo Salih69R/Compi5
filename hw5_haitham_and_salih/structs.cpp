@@ -150,7 +150,8 @@ void Symbol_Table::p_sys_stack(vector<Scope> sys) {
 
 	void Function::ValidateParameters(vector<Node*>& callerParams , Symbol_Table table) {
 
-	/*
+		/*
+		cout << "		validating params of func " << this->name << endl;
 		for (int j = 0; j < callerParams.size(); j++) {
 			cout << "      callerParams[" << j << "] = " << callerParams[j]->type;
 			cout << "      paramTypes[" << j << "] = " << paramTypes[j] << endl;
@@ -158,6 +159,8 @@ void Symbol_Table::p_sys_stack(vector<Scope> sys) {
 		*/
 
 		if (callerParams.size() != paramTypes.size()) {
+			//cout << " callerParams.size() = " << callerParams.size() << "		paramTypes.size() = " << paramTypes.size() << endl;
+			
             auto tmp = modifiedTokensToString(paramTypes,params);
             errorPrototypeMismatch(yylineno, name, tmp);
 			exit(0);
@@ -165,8 +168,23 @@ void Symbol_Table::p_sys_stack(vector<Scope> sys) {
 
 		for (int i = 0; i < paramTypes.size(); i++) {
 
-            if(!(paramTypes[i] == (callerParams)[paramTypes.size() - i - 1]->type) && !((callerParams)[paramTypes.size() - i - 1]->type == BYTE_t && paramTypes[i] == INT_t)){
+			
 
+			//need to check if this callerParam is a call
+			if(  (callerParams)[paramTypes.size() - i - 1]->type == FUNCTION_t  ){
+				Function* f = (Function*)(callerParams)[paramTypes.size() - i - 1];
+				if( f->returnType !=  paramTypes[i]  &&     !( f->returnType == BYTE_t && paramTypes[i] == INT_t) ){
+				
+					//cout << "f->returnType = " << f->returnType << endl;
+					auto tmp = modifiedTokensToString(paramTypes,params);
+					errorPrototypeMismatch(yylineno, name, tmp );
+					exit(0);
+				}
+			}
+			else if(!(paramTypes[i] == (callerParams)[paramTypes.size() - i - 1]->type) && !((callerParams)[paramTypes.size() - i - 1]->type == BYTE_t && paramTypes[i] == INT_t)){
+
+
+			//	cout << "(callerParams)[paramTypes.size() - i - 1]->type) = " <<(callerParams)[paramTypes.size() - i - 1]->type << endl;
                 auto tmp = modifiedTokensToString(paramTypes,params);
                 errorPrototypeMismatch(yylineno, name, tmp );
 				exit(0);

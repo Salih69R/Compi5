@@ -31,14 +31,14 @@ typedef enum ScopeType_t{
     NORMAL , LOOP , GLOBAL , FUNCTION
 } ScopeType;
 
-typedef enum tokentype_t { VOID_t ,Enumerator_t, INT_t , ENUM_t , ENUM_CLASS_t,
-     BYTE_t, B_t, BOOL_t,
-     AND_t ,OR_t , NOT_t 
-     , TRUE_t , FALSE_t , RETURN_t ,
-     IF_t , ELSE_t , WHILE_t , BREAK_t ,
-     CONTINUE_t , SC_t ,COMMA_t ,
-     LPAREN_t , RPAREN_t, LBRACE_t,
-     RBRACE_t , ASSIGN_t , COMMENT_t, ID_t, NUM_t, STRING_t ,ADDOPS_t, MULTOPS_t ,EQUALOP_t, RELATIONOP_t , FUNCTION_t , UNDEFYET_t} TokenType;
+typedef enum tokentype_t { VOID_t =0,Enumerator_t = 1, INT_t  = 2, ENUM_t = 3, ENUM_CLASS_t = 4,
+     BYTE_t = 5, B_t = 6, BOOL_t = 7,
+     AND_t = 8,OR_t = 9, NOT_t = 10 
+     , TRUE_t = 11, FALSE_t = 12, RETURN_t =13,
+     IF_t =14, ELSE_t =15, WHILE_t =16, BREAK_t =17,
+     CONTINUE_t =18, SC_t =19,COMMA_t =20,
+     LPAREN_t  =21, RPAREN_t =22, LBRACE_t =23,
+     RBRACE_t =24, ASSIGN_t =25, COMMENT_t=26, ID_t=27, NUM_t=28, STRING_t=29 ,ADDOPS_t=30, MULTOPS_t =31 ,EQUALOP_t =32, RELATIONOP_t =33, FUNCTION_t  =34, UNDEFYET_t =35} TokenType;
 
 
 
