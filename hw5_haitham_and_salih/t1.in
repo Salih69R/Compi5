@@ -17,16 +17,17 @@ void main()
 
 	int a = getOne();
 	printi( getOne() );
-	//print("haitham asdasdads work please?");
+	print("HI");
 	int layah=5;
 	int samaher=getOne();
 	int hodah = layah;
 		printi( layah );
 	printi( hodah );
-	printi( samaher);
+	printi( samaher );
+	print("DONE");
 
 	
-	
+	return;
 
 
 	

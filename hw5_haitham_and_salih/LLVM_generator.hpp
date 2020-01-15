@@ -5,7 +5,7 @@
 #include <set>
 #include <stdbool.h>
 #include "structs.hpp"
-#define REG_NUM 100
+#define REG_NUM 500
 using namespace std;
 
 
@@ -75,6 +75,7 @@ string TokenTypeToLlvmType(TokenType type, Node* node_in_case_type_can_be_functi
 			case BYTE_t:   	return "i8"	; break;
 			case VOID_t:   	return "void"	; break;
 			case ENUM_t:   	return "i32"	; break;
+			case STRING_t:   	return "i8*"	; break;
 			case FUNCTION_t: return TokenTypeToLlvmType(f->returnType); break;
 			default : cout << "error in TypeToLvmTypes, type is : " << type << endl;
 			exit(0);
@@ -264,7 +265,7 @@ public:
 	
 	string genCall(string fun_id , TokenType fun_retype , vector<TokenType> params , vector<Node*> reg_args){
 		
-		string tmp_reg, load_str, line;//helper strings
+		string tmp_reg, load_str, line , arr_size_inpxels;//helper strings
 		
 		if (reg_args.size() == 0){
 			
@@ -297,7 +298,27 @@ public:
 
 					
 			}else{
-				args.push_back(i);				
+				if (i->type == STRING_t){
+					tmp_reg =RegAlloc();
+					string str_without_chopticks = i->value.substr(1,i->value.size()-2);
+					string arr_size = to_string((i->value).length());
+					line = tmp_reg + " = alloca [" + arr_size + " x i8]";
+					CodeBuffer::instance().emit("	" + line);
+					
+					string llvm_str = "c\"" + str_without_chopticks + "\\0A\\00\"";
+				 arr_size_inpxels = "["+arr_size  + " x i8]";
+					line = "	store "+arr_size_inpxels+" " + llvm_str + " , " + arr_size_inpxels + "* " + tmp_reg; 
+					CodeBuffer::instance().emit( line);
+					string nd_tmp_reg = RegAlloc();
+					CodeBuffer::instance().emit("	" + nd_tmp_reg + " = getelementptr " + arr_size_inpxels+" , " + arr_size_inpxels+"* "+ tmp_reg + ", i64 0, i64 0");
+					
+					node =new Variable(i->type, i->name, 1, str_without_chopticks, nd_tmp_reg);//we sent offset = 1 cause fuck offsets
+					args.push_back(node);
+					to_del_args.push_back(node);
+					
+				}else{
+				args.push_back(i);	
+				}				
 			}			
 		}
 		
