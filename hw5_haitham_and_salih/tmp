@@ -19,32 +19,8 @@ getOne:
 define void @main() {
 main:
 
-	%0 = call i32 @getOne( )
-	%1 = alloca i32
-	store i32 %0 , i32* %1
-	%2 = call i32 @getOne( )
-	call void @printi(i32 %2)
-	%3 = alloca [4 x i8]
-	store [4 x i8] c"HI\0A\00" , [4 x i8]* %3
-	%4 = getelementptr [4 x i8] , [4 x i8]* %3, i64 0, i64 0
-	call void @print(i8* %4)
-	%5 = alloca i32
-	store i32 5 , i32* %5
-	%6 = call i32 @getOne( )
-	%7 = alloca i32
-	store i32 %6 , i32* %7
-	%8 = alloca i32
-	%9 = load i32 , i32* %5
-	store i32 %9 , i32* %8
-	%10 = load i32 , i32* %5
-	call void @printi(i32 %10)
-	%11 = load i32 , i32* %8
-	call void @printi(i32 %11)
-	%12 = load i32 , i32* %7
-	call void @printi(i32 %12)
-	%13 = alloca [6 x i8]
-	store [6 x i8] c"DONE\0A\00" , [6 x i8]* %13
-	%14 = getelementptr [6 x i8] , [6 x i8]* %13, i64 0, i64 0
-	call void @print(i8* %14)
+	%0 = trunc i32 1234 to i8
+	%1 = zext i8 %0 to i32
+	call void @printi(i32 %1)
 	ret void
 }

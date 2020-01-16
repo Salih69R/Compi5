@@ -72,7 +72,8 @@ string TokenTypeToLlvmType(TokenType type, Node* node_in_case_type_can_be_functi
 			
 			case BOOL_t: 	return "i1"   ; break;
 			case INT_t:   	return "i32"	; break;
-			case BYTE_t:   	return "i8"	; break;
+			//byte to 32
+			case BYTE_t:   	return "i32"	; break;
 			case VOID_t:   	return "void"	; break;
 			case ENUM_t:   	return "i32"	; break;
 			case STRING_t:   	return "i8*"	; break;
@@ -419,34 +420,67 @@ public:
 	//--------------------EXP code generating methods-----------------
 	
 	//returns the reg it updated, deallocs the regs it got as params, the addops dont ignore signed and unsigned
-	string genAddOp(string r1, string op, string r2, TokenType resType){
+	string genAddOp(Node* r1,Node* r2,string op,TokenType res_type = INT_t){
 		
-		string r = pool.regAlloc();
+		 //incase signed or not
+		 string final_op = res_type == INT_t ? opToCommand(op) : opToCommandU(op);
 		
-		CodeBuffer::instance().emit("	"+ r + " = "+ opToCommand(op)  + " " + TokenTypeToLlvmType(resType) + " " + r1 + " , " + r2 );
-		pool.regDealloc(r1);
-		pool.regDealloc(r2);
-        return r;		
+		string r1_save_reg , r2_save_reg;
+		string load_line , add_line;
+		
+		if(r1->is_Var){
+			r1_save_reg = RegAlloc();
+			string type = TokenTypeToLlvmType(r1->type);
+			load_line = r1_save_reg + " = load " + type + ", "+ type + "* " + r1->reg ;
+			CodeBuffer::instance().emit("	" + load_line);
+		}
+		
+		if (!(r1->is_Var)){
+			r1_save_reg = RegAlloc();
+			string type = TokenTypeToLlvmType(r1->type);
+			add_line = r1_save_reg + " = add " + type + " 0 , " + r1->value ;
+			CodeBuffer::instance().emit("	" + add_line);
+			
+		}
+		
+		if(r2->is_Var){
+			r2_save_reg = RegAlloc();
+			string type = TokenTypeToLlvmType(r2->type);
+			load_line = r2_save_reg + " = load " + type + ", "+ type + "* " + r2->reg ;
+			CodeBuffer::instance().emit("	" + load_line);
+		}
+		
+		if (!(r2->is_Var)){
+			r2_save_reg = RegAlloc();
+			string type = TokenTypeToLlvmType(r2->type);
+			add_line = r2_save_reg + " = add " + type + " 0 , " + r2->value ;
+			CodeBuffer::instance().emit("	" + add_line);
+			
+		}
+		
+		string res_reg_as_int = RegAlloc();
+		
+		string res_line_as_int = res_reg_as_int+" = " + final_op + " " +TokenTypeToLlvmType(r1->type) + " " + r1_save_reg + " , " + r2_save_reg;
+		
+		CodeBuffer::instance().emit("	" + res_line_as_int);
+		if(r1->type == BYTE_t && r2->type == BYTE_t){
+			string trunc_reg = RegAlloc();
+			string zext_reg = RegAlloc();
+			CodeBuffer::instance().emit("	" + trunc_reg + " = trunc i32 " + res_reg_as_int + " to i8");
+			CodeBuffer::instance().emit("	" + zext_reg + " = zext i8 " + trunc_reg + " to i32");
+			res_reg_as_int = zext_reg;//now this reg has the value
+			
+		}
+		
+		string res_reg = RegAlloc();
+		CodeBuffer::instance().emit("	" + res_reg + " = alloca " + TokenTypeToLlvmType(r1->type));
+		CodeBuffer::instance().emit("	store "+ TokenTypeToLlvmType(r1->type) + " " + res_reg_as_int + " , " + TokenTypeToLlvmType(r1->type)+"* " + res_reg);
+
+		
+		return res_reg;	
 	}
 	
-	//returns the reg it updated, deallocs the regs it got as params, the addops dont ignore signed and unsigned
-	string genMultOp(string r1, string op, string r2, TokenType resType){
-		
-		
-		string lvmOP;
-		if(resType == INT_t)
-			lvmOP = opToCommand(op);
-		else//BYTE_t
-			lvmOP = opToCommandU(op);//unsigned
-
-		string r = pool.regAlloc();
-
-
-		CodeBuffer::instance().emit("	"+ r + " = "+ lvmOP  + " " + TokenTypeToLlvmType(resType) + " " + r1 + " , " + r2 );
-		pool.regDealloc(r1);
-		pool.regDealloc(r2);
-        return r;		
-	}
+	
 	
 	
 	

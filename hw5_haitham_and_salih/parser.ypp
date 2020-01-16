@@ -595,11 +595,15 @@ Exp :			LPAREN Exp RPAREN
 						if ($1->type == BYTE_t && $3->type == BYTE_t){
 							
 							$$ = new Node(BYTE_t);
-							$$->reg = a.genAddOp($1->reg, $2->value , $3->reg , BYTE_t);
+							$$->is_Var = true;
+							$$->reg = a.genAddOp($1,$3,$2->value,BYTE_t);
 						}
 						else{ 
+							
 							$$= new Node(INT_t);
-							$$->reg = a.genAddOp($1->reg, $2->value , $3->reg , INT_t);
+							//its valued is save in an allocated place , so we need that.
+							$$->is_Var = true;
+							$$->reg = a.genAddOp($1,$3,$2->value);
 							}
 
 						}
@@ -613,11 +617,14 @@ Exp :			LPAREN Exp RPAREN
 						if ($1->type == BYTE_t && $3->type == BYTE_t){
 							
 							$$ = new Node(BYTE_t);
-							$$->reg = a.genMultOp($1->reg, $2->value , $3->reg , BYTE_t);
+							$$->is_Var = true;
+							$$->reg = a.genAddOp($1,$3,$2->value,BYTE_t);
 						}
 						else{ 
 							$$= new Node(INT_t);
-							$$->reg = a.genMultOp($1->reg, $2->value , $3->reg , INT_t);
+							//its valued is save in an allocated place , so we need that.
+							$$->is_Var = true;
+							$$->reg = a.genAddOp($1,$3,$2->value);
 							}
 
 						}
