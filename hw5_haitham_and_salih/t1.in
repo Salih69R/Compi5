@@ -10,7 +10,7 @@ void main()
 	x = 2b/x;
 	//x = 6 / x;
 	printi(x);
-	
+	print("s2");
 	return;
 
 

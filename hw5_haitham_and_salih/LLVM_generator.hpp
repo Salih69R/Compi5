@@ -196,9 +196,9 @@ public:
 		CodeBuffer::instance().emit(" declare void @exit(i32)  ");
 
 		string int_format = " c\"\%d\\0A\\00\"";
-		string str_format = " c\"\%s\\0A\\00\"";
+		string str_format = " c\"\%s\" ";
 		CodeBuffer::instance().emit(" @.int_specifier = constant [4 x i8]" + int_format  );
-		CodeBuffer::instance().emit(" @.str_specifier = constant [4 x i8]" +  str_format  );
+		CodeBuffer::instance().emit(" @.str_specifier = constant [2 x i8]" +  str_format  );
 
 
 		CodeBuffer::instance().emit("  define void @printi(i32) { ");
@@ -206,7 +206,7 @@ public:
 		CodeBuffer::instance().emit("  ret void  } ");
 
 		CodeBuffer::instance().emit("  define void @print(i8*) { ");
-		CodeBuffer::instance().emit("  call i32 (i8*, ...) @printf(i8* getelementptr ([4 x i8], [4 x i8]* @.str_specifier, i32 0, i32 0), i8* %0) ");
+		CodeBuffer::instance().emit("  call i32 (i8*, ...) @printf(i8* getelementptr ([2 x i8], [2 x i8]* @.str_specifier, i32 0, i32 0), i8* %0) ");
 		CodeBuffer::instance().emit("  ret void } ");
 
 	}
