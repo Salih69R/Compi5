@@ -1,4 +1,4 @@
-#include "bp.hpp"
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -46,7 +46,10 @@ string opToCommand(string op )
 	throw -1;
 }
 
-
+string boolValToInt(string value){
+	return value == "false" ? "0" : "1";
+}
+	
 
 
 string paramsToString(vector<string> args){
@@ -366,7 +369,7 @@ public:
 		}
 	}
 	
-	
+
 	
 	
 	//despite it's name, doesn't really alloc anything
@@ -412,8 +415,7 @@ public:
 	
 	
 	
-	
-	
+
 	
 	
 	
@@ -482,6 +484,67 @@ public:
 	
 	
 	
+	//use this function only if you know the result (true or false) and it is saved in boolExp->val already as string
+	void genBool(Node* boolExp){
+		
+		CodeBuffer::instance().emit("	" + boolExp->reg + " = add i1 0 , " + boolValToInt(boolExp->value) );
+	}
+	
+	
+	string genBoolFromRelOp(Node* E1 , Node* E2, string op, string* resultVal){
+		string reg = RegAlloc();
+		
+		//finding type to know if using signed or unsigned ops
+		TokenType res_type = E1->type;
+		if(E2->type != INT_t)
+			res_type = E2->type;
+		string final_op = res_type == INT_t ? opToCommand(op) : opToCommandU(op);
+		
+		string r1_save_reg = E1->reg , r2_save_reg = E2->reg;
+		
+		if(E1->is_Var){
+			r1_save_reg = RegAlloc();
+			CodeBuffer::instance().emit("	" + r1_save_reg + " = load i32, i32* " + E1->reg);
+		}
+		if(E2->is_Var){
+			r2_save_reg = RegAlloc();
+			CodeBuffer::instance().emit("	" + r2_save_reg + " = load i32, i32* " + E2->reg);
+		}
+		
+		
+		//first label is true, second is false
+		int i1 = CodeBuffer::instance().emit("	br i1 " + r1_save_reg + " " + final_op + " " + r2_save_reg + ", label @, label @");
+		
+		string trueL = CodeBuffer::instance().genLabel();
+		
+		CodeBuffer::instance().emit("	" + reg + " = add 0 , 1");
+		int i2 = CodeBuffer::instance().emit("br label @");//to label Done
+		
+		string falseL = CodeBuffer::instance().genLabel();
+		
+		CodeBuffer::instance().emit("	" + reg + " = add 0 , 0");
+		int i3 = CodeBuffer::instance().emit("br label @");//to label Done
+		
+		string DoneL = CodeBuffer::instance().genLabel();
+		
+		
+		pair<int,BranchLabelIndex> p11 = pair<int,BranchLabelIndex>(i1,FIRST);
+		auto listTrue = CodeBuffer::instance().makelist(p11);	
+		CodeBuffer::instance().bpatch(listTrue, trueL);		
+		
+		pair<int,BranchLabelIndex> p12 = pair<int,BranchLabelIndex>(i1,SECOND);
+		auto listFalse = CodeBuffer::instance().makelist(p12);
+		CodeBuffer::instance().bpatch(listFalse, falseL);	
+		
+		pair<int,BranchLabelIndex> p2 = pair<int,BranchLabelIndex>(i2,FIRST);
+		pair<int,BranchLabelIndex> p3 = pair<int,BranchLabelIndex>(i3,FIRST);
+		auto listDone1 = CodeBuffer::instance().makelist(p2);
+		auto listDone2 = CodeBuffer::instance().makelist(p3);
+		
+		auto listDone = CodeBuffer::instance().merge(listDone1,listDone2);
+		CodeBuffer::instance().bpatch(listDone, DoneL);
+		
+	}
 	
 	
 	

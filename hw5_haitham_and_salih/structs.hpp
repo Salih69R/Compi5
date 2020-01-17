@@ -11,6 +11,7 @@
 #include <vector>
 #include <assert.h>
 #include "hw3_output.hpp"
+#include "bp.hpp"
 extern int yylineno;
 
 
@@ -64,12 +65,14 @@ public:
 	int size;
 	
 
-    vector<int> truelist;
-    vector<int> falselist;
+    vector<pair<int,BranchLabelIndex>> truelist;
+    vector<pair<int,BranchLabelIndex>> falselist;
+	vector<pair<int,BranchLabelIndex>> nextlist;
 	
 Node( TokenType type, string name = "",string value = "" , string reg = ""):name(name), type(type), value(value), reg(reg) , is_Var(false) {
-	truelist = vector<int>();
-	falselist = vector<int>();
+	truelist = vector<pair<int,BranchLabelIndex>>();
+	falselist = vector<pair<int,BranchLabelIndex>>();
+	nextlist = vector<pair<int,BranchLabelIndex>>();
 };
 
 };

@@ -217,11 +217,18 @@ Enumerator :		ID
 						};
 
 Statements :	Statement 													
-						{}
-				| Statements Statement 												
-						{};
+						{
+							$$->nextlist = $1->nextlist;
+						}
+				| Statements  Statement 												
+						{
+							$$->nextlist = $2->nextlist;
+						};
 
-Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
+Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE 
+						{
+							$$->nextlist = $3->nextlist;
+						}
 				| Type ID SC 														
 
 						{	
@@ -455,26 +462,45 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							a.genReturn(f , $2);
 							return_flag = false;
 							
-							
 						}
-				| IF LPAREN checkBoolExp RPAREN OPENORMAL Statement CLOSE  									
-						{
-						}
-				| IF LPAREN checkBoolExp   RPAREN OPENORMAL
-							
-							Statement CLOSE
-							ELSE OPENORMAL
 						
-							Statement CLOSE
-						{}
-				| WHILE LPAREN checkBoolExp 
-				{
 					
-					 symbolTable.openScope(LOOP);
-				} RPAREN  Statement 									
+				| IF LPAREN checkBoolExp M RPAREN OPENORMAL Statement CLOSE  									
 						{
-							symbolTable.closeScope();
-						 }
+						CodeBuffer::instance().bpatch($3->truelist, $4->reg);
+						$$->nextlist = CodeBuffer::instance().merge($3->falselist , $7->nextlist );
+						}
+				
+				
+				| IF LPAREN checkBoolExp M  RPAREN OPENORMAL Statement CLOSE ELSE MELSE M OPENORMAL Statement CLOSE
+						{
+						
+                    CodeBuffer::instance().bpatch($3->truelist, $4->reg);
+                    CodeBuffer::instance().bpatch($3->falselist,$11->reg);
+					auto temp = CodeBuffer::instance().merge($7->nextlist , $10->nextlist);
+					$$->nextlist = CodeBuffer::instance().merge(temp , $13->nextlist);
+						}
+				
+			
+			| WHILE LPAREN M checkBoolExp M
+				{
+					symbolTable.openScope(LOOP);
+					
+					CodeBuffer::instance().bpatch($4->truelist, $5->reg);
+					
+				} RPAREN  Statement 									
+				{
+					CodeBuffer::instance().bpatch($7->nextlist,$3->reg);
+					$$->nextlist =  $4->falselist;
+				
+				
+					symbolTable.closeScope();
+					CodeBuffer::instance().emit("br label " + $3->reg);
+					
+                    
+				}
+						 
+						 
 				| BREAK SC 															
 						{
 							auto& scope = symbolTable.scopes_table[symbolTable.scopes_table.size()-1 < 0 ? 0 : symbolTable.scopes_table.size()-1];
@@ -482,6 +508,8 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 								errorUnexpectedBreak(yylineno);
 								exit(0);
 							}
+							
+							//TODO: add nextlist code for it?
 						}
 				| CONTINUE SC 														
 						{
@@ -490,6 +518,7 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 								errorUnexpectedContinue(yylineno);
 								exit(0);
 							}
+							//TODO: add nextlist code for it?
 						};
 checkBoolExp :     Exp {
 				
@@ -498,6 +527,9 @@ checkBoolExp :     Exp {
 							errorMismatch(yylineno);
 							exit(0);
 						}
+						
+						
+
 					}
 Call :			ID LPAREN {ParamListStack.push(vector<Node*>()); } ExpList RPAREN 										
 						{
@@ -703,10 +735,18 @@ Exp :			LPAREN Exp RPAREN
 						}
 
 				| TRUE 																
-						{$$ = new Node(BOOL_t,"","true");}
+						{
+						
+							$$ = new Node(BOOL_t,"","true", a.RegAlloc());
+							a.genBool($$);
+						
+						}
 
 				| FALSE 															
-						{$$ = new Node(BOOL_t,"","false");}
+						{
+							$$ = new Node(BOOL_t,"","false", a.RegAlloc());
+							a.genBool($$);
+						}
 						
 				| NOT Exp 															
 						{
@@ -716,34 +756,52 @@ Exp :			LPAREN Exp RPAREN
 									exit(0);
 							}
 							
-							$$ = new Node(BOOL_t , "" , $2->value == "false" ? "true" : "false");
+							$$ = new Node(BOOL_t , "" , "");
+							$$->truelist = $2->falselist;
+							$$->falselist = $2->truelist;
 							
+							//TODO: fix this
+							a.genBool($$);
 						}
 
 
-				| Exp AND Exp 														
+				| Exp AND M Exp 														
 						{
-							if($1->type != BOOL_t || $3->type != BOOL_t){
+							if($1->type != BOOL_t || $4->type != BOOL_t){
 									errorMismatch(yylineno);
 									delete $1;
-									delete $3;
+									delete $4;
 									exit(0);
 							}
-							$$ = new Node(BOOL_t);
+							$$ = new Node(BOOL_t , "" , "false");
+							
+								
+							//TODO: fix this
+							a.genBool($$);
+								
+							CodeBuffer::instance().bpatch($1->truelist,$3->reg);
+							$$->falselist = CodeBuffer::instance().merge($1->falselist,$4->falselist);
+							$$->truelist = $4->truelist;
 							
 
 						}
 
-				| Exp OR Exp 														
+				| Exp OR M Exp 														
 						{
-							if($1->type != BOOL_t || $3->type != BOOL_t){
+							if($1->type != BOOL_t || $4->type != BOOL_t){
 									errorMismatch(yylineno);
 									delete $1;
-									delete $3;
+									delete $4;
 									exit(0);
 							}
-							$$ = new Node(BOOL_t);
+							$$ = new Node(BOOL_t , "" , "false");
 							
+							//TODO: fix this
+							a.genBool($$);
+							
+							CodeBuffer::instance().bpatch($1->falselist,$3->reg);
+							$$->truelist = CodeBuffer::instance().merge($1->truelist,$4->truelist);
+							$$->falselist = $4->falselist;
 						}
 
 				| Exp RELATIONOP Exp 												
@@ -759,6 +817,9 @@ Exp :			LPAREN Exp RPAREN
 							
 							$$ = new Node(BOOL_t);
 							
+								
+								
+							$$->reg = a.genBoolFromRelOp($1,$3,$2->value, &($$->value));
 						}
 
 				| Exp EQUALOP Exp 													
@@ -770,7 +831,7 @@ Exp :			LPAREN Exp RPAREN
 									exit(0);
 							}
 							$$ = new Node(BOOL_t);
-							
+							$$->reg = a.genBoolFromRelOp($1,$3,$2->value, &($$->value));
 						}
 
 				| LPAREN Type RPAREN Exp 
@@ -818,14 +879,16 @@ CLOSE:						{symbolTable.closeScope();};
 
 
 M:      				{
-							$$ = new Node( UNDEFYET_t,"" ,"",   CodeBuffer::instance().genLabel());//saves the label of the next label to do
+							$$ = new Node( UNDEFYET_t,"" ,"",   CodeBuffer::instance().genLabel());//saves the label in reg
 						}
 MELSE:					{
-						//this one makes sure the if we are in the if body (the if cond is true) and there is an else body, we use this to skip the else body
+						//this one makes sure that if we are in the if body (the if cond is true) and there is an else body, we use this to skip the else body
+						
+						
 							$$ = new Node(UNDEFYET_t); 
 							
-							pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex> (CodeBuffer::instance().emit("goto @"), FIRST);
-							$$->truelist = CodeBuffer::instance().makelist(p);
+							pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex> (CodeBuffer::instance().emit("br label @")  , FIRST);
+							$$->nextlist = CodeBuffer::instance().makelist(p);
 						}
 %%
 

@@ -1,16 +1,23 @@
 
 
+int check(bool x){
+	
+	int a = 0;
+	if(x){
+		a = 1;
+	}
+
+	return a;
+}
+
+
 
 void main()
 {
+	int res = check(true);
+	printi(res);
 
-	
-	byte x = 4b - 5b;
-	printi(x);
-	x = 2b/x;
-	//x = 6 / x;
-	printi(x);
-	print("s2");
+
 	return;
 
 
