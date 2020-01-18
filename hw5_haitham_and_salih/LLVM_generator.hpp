@@ -482,6 +482,36 @@ public:
 		return res_reg;	
 	}
 	
+	///////////////////// mefne bakarah and bool stuf/////////////////////////////
+	
+	
+	int genIF(Node* BoolExp){
+		
+		string cond_reg = RegAlloc();
+		if (BoolExp->is_Var){
+			CodeBuffer::instance().emit("	" + cond_reg + " = load i1, i1* " + BoolExp->reg);
+		}
+		else 
+			CodeBuffer::instance().emit("	" + cond_reg + " = add i1 0," + BoolExp->reg);
+		
+	
+		int i1 = CodeBuffer::instance().emit("	br i1 " + cond_reg + " , label @, label @");
+		return i1;
+		
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	
 	//use this function only if you know the result (true or false) and it is saved in boolExp->val already as string
@@ -545,6 +575,9 @@ public:
 		CodeBuffer::instance().bpatch(listDone, DoneL);
 		
 	}
+	
+	
+	
 	
 	
 	

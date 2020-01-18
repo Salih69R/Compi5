@@ -21,8 +21,8 @@
 	Genreator a = Genreator();
 	vector<Node*> args = vector<Node*>(); // this is for call
 	bool return_flag = true;
-	
-	
+	int last_br_emit;
+	Node* last_bool_exp = nullptr;
 	
 
 %}
@@ -225,9 +225,19 @@ Statements :	Statement
 							$$->nextlist = $2->nextlist;
 						};
 
-Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE 
+Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 						{
+							//$$ = new Node(UNDEFYET_t);
 							$$->nextlist = $3->nextlist;
+							  
+							//int i = CodeBuffer::instance().emit("	br label @");
+							
+							//pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex>(i,FIRST);							
+							//$$->nextlist = CodeBuffer::instance().merge($$->nextlist, CodeBuffer::instance().makelist(p));
+							
+							//cout << "in S=>{SList} : $$->nextlist.size() = " << $$->nextlist.size() <<endl;
+							
+							
 						}
 				| Type ID SC 														
 
@@ -465,10 +475,32 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 						}
 						
 					
-				| IF LPAREN checkBoolExp M RPAREN OPENORMAL Statement CLOSE  									
+				| IF LPAREN checkBoolExp MAKE_IF_BR M RPAREN OPENORMAL Statement CLOSE  									
 						{
-						CodeBuffer::instance().bpatch($3->truelist, $4->reg);
-						$$->nextlist = CodeBuffer::instance().merge($3->falselist , $7->nextlist );
+						
+						pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex>(last_br_emit,FIRST);
+						pair<int,BranchLabelIndex> p2 = pair<int,BranchLabelIndex>(last_br_emit,SECOND);
+						$3->truelist =  CodeBuffer::instance().makelist(p);
+	
+						
+						
+						$3->falselist =  CodeBuffer::instance().makelist(p2);
+						
+						CodeBuffer::instance().bpatch($3->truelist, $5->reg);
+						
+						
+						$$->nextlist = CodeBuffer::instance().merge($3->falselist , $8->nextlist );
+						
+						int i = CodeBuffer::instance().emit("	br label @");
+						string DoneL =  CodeBuffer::instance().genLabel();
+						CodeBuffer::instance().bpatch($$->nextlist, DoneL);
+						
+						
+						
+						pair<int,BranchLabelIndex> p3 = pair<int,BranchLabelIndex>(i,FIRST);
+						CodeBuffer::instance().bpatch(CodeBuffer::instance().makelist(p3),DoneL);
+						
+						
 						}
 				
 				
@@ -528,7 +560,7 @@ checkBoolExp :     Exp {
 							exit(0);
 						}
 						
-						
+						last_bool_exp = $$;
 
 					}
 Call :			ID LPAREN {ParamListStack.push(vector<Node*>()); } ExpList RPAREN 										
@@ -878,6 +910,10 @@ OPENORMAL:					{symbolTable.openScope(NORMAL);};
 CLOSE:						{symbolTable.closeScope();};
 
 
+MAKE_IF_BR:				{
+							last_br_emit = a.genIF(last_bool_exp);
+						}
+			
 M:      				{
 							$$ = new Node( UNDEFYET_t,"" ,"",   CodeBuffer::instance().genLabel());//saves the label in reg
 						}
