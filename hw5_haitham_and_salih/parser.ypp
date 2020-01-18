@@ -477,7 +477,7 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 					
 				| IF LPAREN checkBoolExp MAKE_IF_BR M RPAREN OPENORMAL Statement CLOSE  									
 						{
-						
+						int old = last_br_emit;
 						pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex>(last_br_emit,FIRST);
 						pair<int,BranchLabelIndex> p2 = pair<int,BranchLabelIndex>(last_br_emit,SECOND);
 						$3->truelist =  CodeBuffer::instance().merge($3->truelist , CodeBuffer::instance().makelist(p));
@@ -497,12 +497,13 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 						pair<int,BranchLabelIndex> p3 = pair<int,BranchLabelIndex>(i,FIRST);
 						CodeBuffer::instance().bpatch(CodeBuffer::instance().makelist(p3),DoneL);
 						
-						
+						last_br_emit = old;
 						}
 				
 				
 				| IF LPAREN checkBoolExp MAKE_IF_BR M  RPAREN OPENORMAL Statement CLOSE ELSE MELSE M OPENORMAL Statement CLOSE
 						{
+						int old = last_br_emit;
 						pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex>(last_br_emit,FIRST);
 						pair<int,BranchLabelIndex> p2 = pair<int,BranchLabelIndex>(last_br_emit,SECOND);
 						$3->truelist =  CodeBuffer::instance().merge($3->truelist , CodeBuffer::instance().makelist(p));
@@ -524,28 +525,53 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 						pair<int,BranchLabelIndex> p3 = pair<int,BranchLabelIndex>(i,FIRST);
 						CodeBuffer::instance().bpatch(CodeBuffer::instance().makelist(p3),DoneL);
 						
+						last_br_emit = old;
 						}
 				
 			
-			| WHILE LPAREN M checkBoolExp M
+				| WHILE LPAREN M checkBoolExp  MAKE_IF_BR  M OPENLOOP RPAREN  Statement 									
 				{
-					symbolTable.openScope(LOOP);
+					int old = last_br_emit;
+					cout << 1 << endl;
 					
-					CodeBuffer::instance().bpatch($4->truelist, $5->reg);
+					pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex>(last_br_emit,FIRST);
+					pair<int,BranchLabelIndex> p2 = pair<int,BranchLabelIndex>(last_br_emit,SECOND);
 					
-				} RPAREN  Statement 									
-				{
-					CodeBuffer::instance().bpatch($7->nextlist,$3->reg);
-					$$->nextlist =  $4->falselist;
-				
-				
-					symbolTable.closeScope();
-					CodeBuffer::instance().emit("br label " + $3->reg);
+					cout << 2 << endl;
 					
-                    
+					
+					$4->truelist =  CodeBuffer::instance().merge($4->truelist , CodeBuffer::instance().makelist(p));
+					$4->falselist =  CodeBuffer::instance().merge($4->falselist , CodeBuffer::instance().makelist(p2));
+					
+					cout << 3 << endl;
+					
+					$$->nextlist = CodeBuffer::instance().merge($$->nextlist, $4->falselist);
+					
+					cout << 4 << endl;
+					
+					$$->nextlist = CodeBuffer::instance().merge($$->nextlist, $9->nextlist);
+					
+					cout << 5 << endl;
+					
+					CodeBuffer::instance().bpatch($4->truelist, $6->reg);
+					
+
+					cout << 6 << endl;
+					
+					int i = CodeBuffer::instance().emit("	br label @");
+					pair<int,BranchLabelIndex> p3 = pair<int,BranchLabelIndex>(i,FIRST);
+					string DoneL = CodeBuffer::instance().genLabel();
+					CodeBuffer::instance().bpatch(CodeBuffer::instance().makelist(p3),$3->reg);
+					
+					CodeBuffer::instance().bpatch($$->nextlist, DoneL);
+					
+					
+                    symbolTable.closeScope();
+					last_br_emit = old;
 				}
 						 
-						 
+						
+						
 				| BREAK SC 															
 						{
 							auto& scope = symbolTable.scopes_table[symbolTable.scopes_table.size()-1 < 0 ? 0 : symbolTable.scopes_table.size()-1];
@@ -920,6 +946,7 @@ Exp :			LPAREN Exp RPAREN
 						
 						
 OPENORMAL:					{symbolTable.openScope(NORMAL);};
+OPENLOOP:					{symbolTable.openScope(LOOP);};
 CLOSE:						{symbolTable.closeScope();};
 
 

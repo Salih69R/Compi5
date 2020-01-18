@@ -487,12 +487,13 @@ public:
 	
 	int genIF(Node* BoolExp){
 		
-		string cond_reg = RegAlloc();
+		string cond_reg;
 		if (BoolExp->is_Var){
+			cond_reg = RegAlloc();
 			CodeBuffer::instance().emit("	" + cond_reg + " = load i1, i1* " + BoolExp->reg);
 		}
 		else 
-			CodeBuffer::instance().emit("	" + cond_reg + " = add i1 0," + BoolExp->reg);
+			cond_reg = BoolExp->reg;
 		
 	
 		int i1 = CodeBuffer::instance().emit("	br i1 " + cond_reg + " , label @, label @");

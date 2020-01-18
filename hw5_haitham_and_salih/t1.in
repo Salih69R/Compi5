@@ -1,27 +1,34 @@
 
 
-int check(bool x){
+void check(int y){
+		
+	int x = y;
+	bool a = true;
 	
-	int a = 0;
-	if(x){
-		a = 1;
+	while(a){
+	
+			
+		
+		
+		
+		printi(x);
+		//x = x - 1;
+	
+		//if(x > 0){
+		//	a = true;
+		//}
+		//else {
+		//	a = false;
+		//}
+		
 	}
-	else {
-		a = 2;
-	}
-
-	return a;
 }
 
 
 
 void main()
 {
-	int res = check(true);
-	printi(res);
-	
-	res = check(false);
-	printi(res);
+	check(1);
 	
 	return;
 
