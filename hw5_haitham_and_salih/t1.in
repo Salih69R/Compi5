@@ -1,26 +1,31 @@
 
 
-void check(int y){
+void check(int x){
 		
-	int x = y;
+	
 	bool a = true;
-	
 	while(a){
-	
+		if(true){
+			//printi(x);
 			
-		
-		
-		
-		printi(x);
-		//x = x - 1;
-	
-		//if(x > 0){
-		//	a = true;
-		//}
-		//else {
-		//	a = false;
-		//}
-		
+			if(a){
+				//a = false;
+				printi(5);
+				while(a){
+				
+					if(false){
+						printi(99);
+					}
+					else{
+					printi(1000);
+					}
+					
+				}
+			}
+		}
+		else {
+			a = false;
+		}
 	}
 }
 
@@ -30,6 +35,8 @@ void main()
 {
 	check(1);
 	
+	
+	printi(7);
 	return;
 
 

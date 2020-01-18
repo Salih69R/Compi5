@@ -21,7 +21,12 @@
 	Genreator a = Genreator();
 	vector<Node*> args = vector<Node*>(); // this is for call
 	bool return_flag = true;
-	int last_br_emit;
+	
+	
+		//these are for if, and loops and shit like that
+	stack<int> last_br_emit;
+	stack<int> last_while_emit;
+	stack< pair<int,BranchLabelIndex> > last_MELSE;//this is not technecacly needed but this parser is an idiot, (or we are, meh :) )
 	Node* last_bool_exp = nullptr;
 	
 
@@ -227,17 +232,7 @@ Statements :	Statement
 
 Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 						{
-							//$$ = new Node(UNDEFYET_t);
 							$$->nextlist = $3->nextlist;
-							  
-							//int i = CodeBuffer::instance().emit("	br label @");
-							
-							//pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex>(i,FIRST);							
-							//$$->nextlist = CodeBuffer::instance().merge($$->nextlist, CodeBuffer::instance().makelist(p));
-							
-							//cout << "in S=>{SList} : $$->nextlist.size() = " << $$->nextlist.size() <<endl;
-							
-							
 						}
 				| Type ID SC 														
 
@@ -477,9 +472,9 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 					
 				| IF LPAREN checkBoolExp MAKE_IF_BR M RPAREN OPENORMAL Statement CLOSE  									
 						{
-						int old = last_br_emit;
-						pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex>(last_br_emit,FIRST);
-						pair<int,BranchLabelIndex> p2 = pair<int,BranchLabelIndex>(last_br_emit,SECOND);
+						
+						pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex>(last_br_emit.top(),FIRST);
+						pair<int,BranchLabelIndex> p2 = pair<int,BranchLabelIndex>(last_br_emit.top(),SECOND);
 						$3->truelist =  CodeBuffer::instance().merge($3->truelist , CodeBuffer::instance().makelist(p));
 						$3->falselist =  CodeBuffer::instance().merge($3->falselist , CodeBuffer::instance().makelist(p2));
 						
@@ -493,19 +488,19 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 						CodeBuffer::instance().bpatch($$->nextlist, DoneL);
 						
 						
-						
 						pair<int,BranchLabelIndex> p3 = pair<int,BranchLabelIndex>(i,FIRST);
 						CodeBuffer::instance().bpatch(CodeBuffer::instance().makelist(p3),DoneL);
 						
-						last_br_emit = old;
+						last_br_emit.pop();
 						}
 				
 				
-				| IF LPAREN checkBoolExp MAKE_IF_BR M  RPAREN OPENORMAL Statement CLOSE ELSE MELSE M OPENORMAL Statement CLOSE
+				| IF LPAREN checkBoolExp MAKE_IF_BR M RPAREN OPENORMAL Statement CLOSE ELSE MELSE M OPENORMAL Statement CLOSE
 						{
-						int old = last_br_emit;
-						pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex>(last_br_emit,FIRST);
-						pair<int,BranchLabelIndex> p2 = pair<int,BranchLabelIndex>(last_br_emit,SECOND);
+						
+						
+						pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex>(last_br_emit.top(),FIRST);
+						pair<int,BranchLabelIndex> p2 = pair<int,BranchLabelIndex>(last_br_emit.top(),SECOND);
 						$3->truelist =  CodeBuffer::instance().merge($3->truelist , CodeBuffer::instance().makelist(p));
 						$3->falselist =  CodeBuffer::instance().merge($3->falselist , CodeBuffer::instance().makelist(p2));
 						
@@ -516,58 +511,57 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 						//--------
 						
 						$$->nextlist = CodeBuffer::instance().merge($8->nextlist , $14->nextlist);//after done from true body, and false body
-						$$->nextlist = CodeBuffer::instance().merge($$->nextlist , $11->nextlist);//add to it the nextlist of MELSE
+						$$->nextlist = CodeBuffer::instance().merge($$->nextlist , CodeBuffer::instance().makelist(last_MELSE.top()));//add to it the nextlist of MELSE
 						
 						
 						int i = CodeBuffer::instance().emit("	br label @");//doneLabel after the else body
 						string DoneL =  CodeBuffer::instance().genLabel();
+						
+						
 						CodeBuffer::instance().bpatch($$->nextlist, DoneL);
 						pair<int,BranchLabelIndex> p3 = pair<int,BranchLabelIndex>(i,FIRST);
-						CodeBuffer::instance().bpatch(CodeBuffer::instance().makelist(p3),DoneL);
 						
-						last_br_emit = old;
+						auto doneList = CodeBuffer::instance().makelist(p3);
+						//doneList = CodeBuffer::instance().merge(doneList, $11->nextlist);
+						
+						CodeBuffer::instance().bpatch(doneList ,DoneL);
+						
+						last_br_emit.pop();
 						}
 				
 			
-				| WHILE LPAREN M checkBoolExp  MAKE_IF_BR  M OPENLOOP RPAREN  Statement 									
+				| MAKE_WHILE WHILE LPAREN M checkBoolExp  MAKE_IF_BR  M OPENLOOP RPAREN  Statement 									
 				{
-					int old = last_br_emit;
-					cout << 1 << endl;
 					
-					pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex>(last_br_emit,FIRST);
-					pair<int,BranchLabelIndex> p2 = pair<int,BranchLabelIndex>(last_br_emit,SECOND);
-					
-					cout << 2 << endl;
+					pair<int,BranchLabelIndex> p_while = pair<int,BranchLabelIndex>(last_while_emit.top(),FIRST);
 					
 					
-					$4->truelist =  CodeBuffer::instance().merge($4->truelist , CodeBuffer::instance().makelist(p));
-					$4->falselist =  CodeBuffer::instance().merge($4->falselist , CodeBuffer::instance().makelist(p2));
+					last_while_emit.pop();
+					CodeBuffer::instance().bpatch( CodeBuffer::instance().makelist(p_while), $4->reg);
 					
-					cout << 3 << endl;
+				
 					
-					$$->nextlist = CodeBuffer::instance().merge($$->nextlist, $4->falselist);
-					
-					cout << 4 << endl;
-					
-					$$->nextlist = CodeBuffer::instance().merge($$->nextlist, $9->nextlist);
-					
-					cout << 5 << endl;
-					
-					CodeBuffer::instance().bpatch($4->truelist, $6->reg);
+					pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex>(last_br_emit.top(),FIRST);
+					pair<int,BranchLabelIndex> p2 = pair<int,BranchLabelIndex>(last_br_emit.top(),SECOND);
+					$5->truelist =  CodeBuffer::instance().merge($5->truelist , CodeBuffer::instance().makelist(p));
+					$5->falselist =  CodeBuffer::instance().merge($5->falselist , CodeBuffer::instance().makelist(p2));
+					$$->nextlist = CodeBuffer::instance().merge($$->nextlist, $5->falselist);
+					$$->nextlist = CodeBuffer::instance().merge($$->nextlist, $10->nextlist);
+					CodeBuffer::instance().bpatch($5->truelist, $7->reg);
 					
 
-					cout << 6 << endl;
+					
 					
 					int i = CodeBuffer::instance().emit("	br label @");
 					pair<int,BranchLabelIndex> p3 = pair<int,BranchLabelIndex>(i,FIRST);
 					string DoneL = CodeBuffer::instance().genLabel();
-					CodeBuffer::instance().bpatch(CodeBuffer::instance().makelist(p3),$3->reg);
+					CodeBuffer::instance().bpatch(CodeBuffer::instance().makelist(p3),$4->reg);
 					
 					CodeBuffer::instance().bpatch($$->nextlist, DoneL);
 					
 					
                     symbolTable.closeScope();
-					last_br_emit = old;
+					last_br_emit.pop();
 				}
 						 
 						
@@ -949,9 +943,11 @@ OPENORMAL:					{symbolTable.openScope(NORMAL);};
 OPENLOOP:					{symbolTable.openScope(LOOP);};
 CLOSE:						{symbolTable.closeScope();};
 
-
+MAKE_WHILE:				{
+							last_while_emit.push( CodeBuffer::instance().emit("	br label @") );
+						}	
 MAKE_IF_BR:				{
-							last_br_emit = a.genIF(last_bool_exp);
+							last_br_emit.push( a.genIF(last_bool_exp) );
 						}
 			
 M:      				{
@@ -961,10 +957,14 @@ MELSE:					{
 						//this one makes sure that if we are in the if body (the if cond is true) and there is an else body, we use this to skip the else body
 						
 						
-							$$ = new Node(UNDEFYET_t); 
+							$$ = new Node(UNDEFYET_t, "MELSE"); 
 							
-							pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex> (CodeBuffer::instance().emit("	br label @")  , FIRST);
-							$$->nextlist = CodeBuffer::instance().makelist(p);
+							int i = CodeBuffer::instance().emit("	br label @");
+							pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex> ( i, FIRST);
+							auto l = CodeBuffer::instance().makelist(p);
+							$$->nextlist = l;
+							
+							last_MELSE.push(p);
 						}
 %%
 
