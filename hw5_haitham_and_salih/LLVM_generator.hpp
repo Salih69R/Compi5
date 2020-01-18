@@ -516,8 +516,18 @@ public:
 	
 	
 	//use this function only if you know the result (true or false) and it is saved in boolExp->val already as string
-	void genBool(Node* boolExp){
-		
+	void genBool(Node* boolExp,string r2 = ""){
+		if(boolExp->is_Var){
+			CodeBuffer::instance().emit("	" + boolExp->reg + " = alloca i1" );
+			string tmp_reg = RegAlloc();
+			
+			CodeBuffer::instance().emit("	"+tmp_reg + " = load i1 , i1* " + r2 );
+			CodeBuffer::instance().emit("	store i1 " + tmp_reg + " , i1* " + boolExp->reg );
+			
+			
+			
+		}
+		else
 		CodeBuffer::instance().emit("	" + boolExp->reg + " = add i1 0 , " + boolValToInt(boolExp->value) );
 	}
 	

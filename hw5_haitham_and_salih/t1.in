@@ -3,29 +3,10 @@
 void check(int x){
 		
 	
-	bool a = true;
-	while(a){
-		if(true){
-			//printi(x);
-			
-			if(a){
-				//a = false;
-				printi(5);
-				while(a){
-				
-					if(false){
-						printi(99);
-					}
-					else{
-					printi(1000);
-					}
-					
-				}
-			}
-		}
-		else {
-			a = false;
-		}
+	bool a = false;
+	while(not a){
+		print("ssss");
+		a = not false;
 	}
 }
 

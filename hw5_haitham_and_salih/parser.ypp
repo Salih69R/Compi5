@@ -403,6 +403,9 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 								}
 							}
 								var->value = $3->value;
+								var->falselist = $3->falselist;
+								var->nextlist = $3->nextlist;
+								var->truelist = $3->truelist;
 								//CodeBuffer::instance().emit("name is " + var->name + "value is " + var->value + "reg is " + var->reg);
 							//the name of the func says alloc, but don't worry it doesn't alloc anything
 							if ($3->type == FUNCTION_t)
@@ -412,9 +415,9 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 								var->reg = a.Var_Alloc();
 								a.Var_Alloc_And_Assign(var->reg ,INT_t,$3,nullptr);
 								
-							}else
+							}else{
 								a.Var_Alloc_And_Assign(var->reg,var->type,$3);
-								
+								}
 							
 							
 							
@@ -575,6 +578,8 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							}
 							
 							//TODO: add nextlist code for it?
+				
+							
 						}
 				| CONTINUE SC 														
 						{
@@ -803,6 +808,7 @@ Exp :			LPAREN Exp RPAREN
 						{
 						
 							$$ = new Node(BOOL_t,"","true", a.RegAlloc());
+							//$$->is_Var = true;
 							a.genBool($$);
 						
 						}
@@ -810,6 +816,7 @@ Exp :			LPAREN Exp RPAREN
 				| FALSE 															
 						{
 							$$ = new Node(BOOL_t,"","false", a.RegAlloc());
+							//$$->is_Var = true;
 							a.genBool($$);
 						}
 						
@@ -820,13 +827,21 @@ Exp :			LPAREN Exp RPAREN
 									delete $2;
 									exit(0);
 							}
+						
+							string my_reg = a.RegAlloc();
+							$$ = new Node(BOOL_t , "" , "",my_reg);
+							$$->is_Var = $2->is_Var;//check this $2->is_Var;
 							
-							$$ = new Node(BOOL_t , "" , "");
-							$$->truelist = $2->falselist;
-							$$->falselist = $2->truelist;
+							if (!($2->is_Var)){
+								$$->value = $2->value == "true" ? "false" : "true";
+								
+							}else{
+								$$->truelist = $2->falselist;
+								$$->falselist = $2->truelist;
+							}
 							
 							//TODO: fix this
-							a.genBool($$);
+							a.genBool($$,$2->reg);
 						}
 
 
