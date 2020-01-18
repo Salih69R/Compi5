@@ -1,25 +1,18 @@
 
-//hi hi 
-void check(int x){
-		
-	
-	bool a = false;
-	while(not a){
-		print("ssss");
-		a = not false;
-	}
-}
+
 
 
 
 void main()
 {
-	check(1);
-	
-	
-	printi(7);
-	return;
+	bool x = false;
+	while(true){
+		print("b4");
+		continue;
+		break;
+		print("after");
+	}
 
-
+	print("after");
 	
 }

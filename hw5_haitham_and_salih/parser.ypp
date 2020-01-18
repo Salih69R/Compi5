@@ -26,7 +26,9 @@
 		//these are for if, and loops and shit like that
 	stack<int> last_br_emit;
 	stack<int> last_while_emit;
-	stack< pair<int,BranchLabelIndex> > last_MELSE;//this is not technecacly needed but this parser is an idiot, (or we are, meh :) )
+	stack< pair<int,BranchLabelIndex> > last_MELSE = stack< pair<int,BranchLabelIndex> >();//this is not technecacly needed but this parser is an idiot, (or we are, meh :) )
+	stack< vector< pair<int,BranchLabelIndex>> > Break_labels = stack<vector< pair<int,BranchLabelIndex> >>();
+	stack< vector< pair<int,BranchLabelIndex>> > Cont_labels = stack<vector< pair<int,BranchLabelIndex> >>();
 	Node* last_bool_exp = nullptr;
 	
 
@@ -316,6 +318,9 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							
 							
 							var = new Variable($1->type,$2->name);
+							var->falselist = $4->falselist;
+							var->truelist = $4->truelist;
+							var->nextlist = $4->nextlist;
 							var->reg = a.Var_Alloc(var->type);
 							if ($4->type != FUNCTION_t)
 								a.Var_Alloc_And_Assign(var->reg,$1->type,$4);
@@ -360,6 +365,9 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 				SC{
 								Enum_var* new_var = new Enum_var(ENUM_t, (Enum_class*) $1   ,$2->name,0,$4->value);
 										symbolTable.insertVar(new_var);
+										new_var->falselist = $4->falselist;
+										new_var->truelist = $4->truelist;
+										new_var->nextlist = $4->nextlist;
 										
 										delete $2;
 										
@@ -536,6 +544,7 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 				| MAKE_WHILE WHILE LPAREN M checkBoolExp  MAKE_IF_BR  M OPENLOOP RPAREN  Statement 									
 				{
 					
+					
 					pair<int,BranchLabelIndex> p_while = pair<int,BranchLabelIndex>(last_while_emit.top(),FIRST);
 					
 					
@@ -545,12 +554,23 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 				
 					
 					pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex>(last_br_emit.top(),FIRST);
+					
 					pair<int,BranchLabelIndex> p2 = pair<int,BranchLabelIndex>(last_br_emit.top(),SECOND);
+					
 					$5->truelist =  CodeBuffer::instance().merge($5->truelist , CodeBuffer::instance().makelist(p));
+					
+					
 					$5->falselist =  CodeBuffer::instance().merge($5->falselist , CodeBuffer::instance().makelist(p2));
+					
 					$$->nextlist = CodeBuffer::instance().merge($$->nextlist, $5->falselist);
+					$$->nextlist = CodeBuffer::instance().merge($$->nextlist, Break_labels.top());
+					
+					
+					
 					$$->nextlist = CodeBuffer::instance().merge($$->nextlist, $10->nextlist);
+					
 					CodeBuffer::instance().bpatch($5->truelist, $7->reg);
+					
 					
 
 					
@@ -559,12 +579,16 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 					pair<int,BranchLabelIndex> p3 = pair<int,BranchLabelIndex>(i,FIRST);
 					string DoneL = CodeBuffer::instance().genLabel();
 					CodeBuffer::instance().bpatch(CodeBuffer::instance().makelist(p3),$4->reg);
+					CodeBuffer::instance().bpatch(Cont_labels.top(), $4->reg);
 					
 					CodeBuffer::instance().bpatch($$->nextlist, DoneL);
 					
 					
+					
                     symbolTable.closeScope();
 					last_br_emit.pop();
+					Break_labels.pop();
+					Cont_labels.pop();
 				}
 						 
 						
@@ -578,6 +602,10 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							}
 							
 							//TODO: add nextlist code for it?
+							int i = CodeBuffer::instance().emit("	br label @");
+							a.RegAlloc();//something about labels ,, llvm sucks
+							pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex> ( i, FIRST);
+							Break_labels.top().push_back(p);
 				
 							
 						}
@@ -589,6 +617,10 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 								exit(0);
 							}
 							//TODO: add nextlist code for it?
+							int i = CodeBuffer::instance().emit("	br label @");
+							a.RegAlloc();//something about labels ,, llvm sucks
+							pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex> ( i, FIRST);
+							Cont_labels.top().push_back(p);
 						};
 checkBoolExp :     Exp {
 				
@@ -598,7 +630,8 @@ checkBoolExp :     Exp {
 							exit(0);
 						}
 						
-						last_bool_exp = $$;
+						last_bool_exp = $1;
+						//$$ = $1;
 
 					}
 Call :			ID LPAREN {ParamListStack.push(vector<Node*>()); } ExpList RPAREN 										
@@ -960,6 +993,10 @@ CLOSE:						{symbolTable.closeScope();};
 
 MAKE_WHILE:				{
 							last_while_emit.push( CodeBuffer::instance().emit("	br label @") );
+							auto break_vec = vector< pair<int,BranchLabelIndex>>();
+							Break_labels.push(break_vec);
+							auto cont_vec = vector< pair<int,BranchLabelIndex>>();
+							Cont_labels.push(cont_vec);
 						}	
 MAKE_IF_BR:				{
 							last_br_emit.push( a.genIF(last_bool_exp) );
