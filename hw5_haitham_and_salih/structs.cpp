@@ -59,7 +59,9 @@ vector<string> modifiedTokensToString(vector<TokenType>& vec , vector<Variable*>
 	int get_enum_valued_order(Enum_var* var){
 		
 		Enum_class* Eclass = var->enum_class;
-		
+	//	cout << "searchinng for " << var->name << endl;
+	//	cout << "class is " << var->enum_class->name << endl;
+	//	cout << "value is " << var->value << endl;
 		for(int i = 0 ; i < Eclass->enum_vals.size() ; i++){
 			
 			if (Eclass->enum_vals[i] == var->value){

@@ -1074,7 +1074,7 @@ Exp :			LPAREN Exp RPAREN
 								}
 						
 						
-						//TODO: fix situation where EXP is a function call
+						//TODO: fix situation where EXP is a function call , no need cuz funcs doesnt return enum
 						
 							
 							if($4->type != ENUM_t && !(symbolTable.isThereEnumContains($4->name))){
@@ -1102,9 +1102,16 @@ Exp :			LPAREN Exp RPAREN
 							
 							
 							//Enum_class* enum_class = symbolTable.FindEnumContains(enum_var->value);
+							
+							if ($4->is_Var){
+							string tmp_reg = a.RegAlloc();
+							CodeBuffer::instance().emit("	"+tmp_reg + " = load i32 , i32* " + $4->reg);
+							$$->reg = a.Var_Alloc();
+							CodeBuffer::instance().emit("	store i32 " + tmp_reg + " , i32* " + $$->reg);
+							}else{
 							$$->reg = a.Var_Alloc();
 							a.Var_Alloc_And_Assign($$->reg ,INT_t,enum_var,nullptr);
-							
+							}
 							
 						};
 						
