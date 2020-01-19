@@ -544,7 +544,8 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 				| MAKE_WHILE WHILE LPAREN M checkBoolExp  MAKE_IF_BR  M OPENLOOP RPAREN  Statement 									
 				{
 					
-					
+					//TODO ask salih for this
+					$$ = new Node(UNDEFYET_t);
 					pair<int,BranchLabelIndex> p_while = pair<int,BranchLabelIndex>(last_while_emit.top(),FIRST);
 					
 					
@@ -562,9 +563,12 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 					
 					$5->falselist =  CodeBuffer::instance().merge($5->falselist , CodeBuffer::instance().makelist(p2));
 					
+				//	cout << "here" << endl;
+				//	cout << "here " << $$->type<< endl;
+				//	cout << "here " << $$->nextlist.size()<< endl;
 					$$->nextlist = CodeBuffer::instance().merge($$->nextlist, $5->falselist);
 					$$->nextlist = CodeBuffer::instance().merge($$->nextlist, Break_labels.top());
-					
+				//	cout << "here " << $$->type<< endl;
 					
 					
 					$$->nextlist = CodeBuffer::instance().merge($$->nextlist, $10->nextlist);
@@ -853,7 +857,7 @@ Exp :			LPAREN Exp RPAREN
 							a.genBool($$);
 						}
 						
-				| NOT Exp 															
+				| NOT checkBoolExp 															
 						{
 							if($2->type != BOOL_t){
 									errorMismatch(yylineno);
@@ -878,23 +882,44 @@ Exp :			LPAREN Exp RPAREN
 						}
 
 
-				| Exp AND M Exp 														
+				| checkBoolExp AND checkBoolExp ANDGEN M MAKE_IF_BR M												
 						{
-							if($1->type != BOOL_t || $4->type != BOOL_t){
+						
+							if($1->type != BOOL_t || $3->type != BOOL_t){
 									errorMismatch(yylineno);
 									delete $1;
-									delete $4;
+									delete $3;
 									exit(0);
 							}
-							$$ = new Node(BOOL_t , "" , "false");
 							
+							
+							pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex>(last_br_emit.top(),FIRST);
+							pair<int,BranchLabelIndex> p2 = pair<int,BranchLabelIndex>(last_br_emit.top(),SECOND);
+							auto l1 =  CodeBuffer::instance().makelist(p);
+							auto l2 =  CodeBuffer::instance().makelist(p2);
+						
 								
+							CodeBuffer::instance().bpatch($1->truelist,$5->reg);
+							CodeBuffer::instance().bpatch($4->nextlist,$5->reg);
+							CodeBuffer::instance().bpatch(l1,$7->reg);
+							
+							
+							$$ = new Node(BOOL_t , "" ,"",a.RegAlloc());
+							$$->is_Var = $1->is_Var;
+							
+							if (!($1->is_Var)){
+								$$->value = $1->value;
+								
+							}
+							
 							//TODO: fix this
-							a.genBool($$);
-								
-							CodeBuffer::instance().bpatch($1->truelist,$3->reg);
-							$$->falselist = CodeBuffer::instance().merge($1->falselist,$4->falselist);
-							$$->truelist = $4->truelist;
+							a.genBool($$,$1->reg);
+							
+							
+							$$->falselist = CodeBuffer::instance().merge($1->falselist,$3->falselist);
+							$$->falselist = CodeBuffer::instance().merge($$->falselist,l2);
+						
+							last_br_emit.pop();
 							
 
 						}
@@ -1009,7 +1034,7 @@ MELSE:					{
 						//this one makes sure that if we are in the if body (the if cond is true) and there is an else body, we use this to skip the else body
 						
 						
-							$$ = new Node(UNDEFYET_t, "MELSE"); 
+							$$ = new Node(UNDEFYET_t, ""); 
 							
 							int i = CodeBuffer::instance().emit("	br label @");
 							pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex> ( i, FIRST);
@@ -1017,6 +1042,16 @@ MELSE:					{
 							$$->nextlist = l;
 							
 							last_MELSE.push(p);
+						}
+ANDGEN:					{
+							$$ = new Node(UNDEFYET_t, ""); 
+							
+							int i = CodeBuffer::instance().emit("	br label @");
+							pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex> ( i, FIRST);
+							auto l = CodeBuffer::instance().makelist(p);
+							$$->nextlist = l;
+							
+							
 						}
 %%
 

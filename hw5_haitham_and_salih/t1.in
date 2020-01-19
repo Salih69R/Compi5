@@ -5,14 +5,10 @@
 
 void main()
 {
-	bool x = false;
-	while(true){
-		print("b4");
-		continue;
-		break;
-		print("after");
+	
+	if (false and true){
+	print("hi");
 	}
-
 	print("after");
 	
 }
