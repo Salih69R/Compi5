@@ -94,9 +94,12 @@ FuncDecl :		RetType ID  {
 						
 						}
 						Statements {
+							
 							if (return_flag){
 								a.genReturn(curFunc);
 							}
+							
+							
 							} RBRACE 
 						{	
 							
@@ -225,11 +228,16 @@ Enumerator :		ID
 
 Statements :	Statement 													
 						{
+							
 							$$->nextlist = $1->nextlist;
+							//cout << "4" << endl;
 						}
 				| Statements  Statement 												
-						{
+						{	
+							//cout << "1" << endl;
 							$$->nextlist = $2->nextlist;
+							//cout << "2" << endl;
+							//cout << "2222222222222222222222222222222222222222222" << endl;
 						};
 
 Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
@@ -257,6 +265,9 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 
 							delete $1;
 							delete $2;
+							
+							//ask saleh
+							$$ = new Node(UNDEFYET_t);
 						}
 				| EnumType ID  SC 													
 						{
@@ -277,7 +288,8 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							var->reg = a.Var_Alloc();
 
 							delete $2;
-						
+						//ask saleh
+							$$ = new Node(UNDEFYET_t);
 						
 						}
 				| EnumDecl 															
@@ -330,7 +342,8 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							symbolTable.insertVar(var);
 							
 
-							
+							//ask saleh
+							$$ = new Node(UNDEFYET_t);
 							
 						}
 				| EnumType ID ASSIGN Exp { 
@@ -350,7 +363,7 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 								auto var_to_assign =symbolTable.getVar($4->name);
 								if ((! tmp->contains($4->name)) && !(tmp->contains(var_to_assign->value))   ){
 								
-									cout << "tmp->name = " << tmp->name << "  , $4->name = " << $4->name  << "  v_t_a->value = "<< var_to_assign->value << endl;
+									//cout << "tmp->name = " << tmp->name << "  , $4->name = " << $4->name  << "  v_t_a->value = "<< var_to_assign->value << endl;
 									errorUndefEnumValue(yylineno,$2->name);
 									delete $2;
 											
@@ -370,6 +383,8 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 										new_var->nextlist = $4->nextlist;
 										
 										delete $2;
+										//ask saleh
+							$$ = new Node(UNDEFYET_t);
 										
 				}	
 				| ID ASSIGN Exp SC 													
@@ -431,6 +446,8 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							
 
 							delete $1;
+							//ask saleh
+							$$ = new Node(UNDEFYET_t);
 							
 						}
 				| Call SC 															
@@ -449,9 +466,11 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							
 							a.genReturn(scope.curFunc);
 							return_flag = false;
+							//ask saleh
+							$$ = new Node(UNDEFYET_t);
 						}
 				| RETURN Exp SC 													
-						{
+						{//cout << "return1" << endl;
 							auto& scope = symbolTable.scopes_table[symbolTable.scopes_table.size()-1 < 0 ? 0 : symbolTable.scopes_table.size()-1];
 							assert(scope.curFunc != nullptr);//grammar makes sure
 							auto f = scope.curFunc;
@@ -461,7 +480,7 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 								exit(0);
 							}
 							
-							
+							//cout << "return2" << endl;
 							
 							//check if exp is call func
 							if ($2->type == FUNCTION_t){
@@ -474,16 +493,18 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 								
 							}
 							
-							
+							//cout << "return3" << endl;
 							a.genReturn(f , $2);
 							return_flag = false;
-							
+							//cout << "return4" << endl;
+							$$ = new Node(UNDEFYET_t);
 						}
 						
 					
 				| IF LPAREN checkBoolExp MAKE_IF_BR M RPAREN OPENORMAL Statement CLOSE  									
 						{
-						
+						//ask saleh
+							$$ = new Node(UNDEFYET_t);
 						pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex>(last_br_emit.top(),FIRST);
 						pair<int,BranchLabelIndex> p2 = pair<int,BranchLabelIndex>(last_br_emit.top(),SECOND);
 						$3->truelist =  CodeBuffer::instance().merge($3->truelist , CodeBuffer::instance().makelist(p));
@@ -503,13 +524,15 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 						CodeBuffer::instance().bpatch(CodeBuffer::instance().makelist(p3),DoneL);
 						
 						last_br_emit.pop();
+						
 						}
 				
 				
 				| IF LPAREN checkBoolExp MAKE_IF_BR M RPAREN OPENORMAL Statement CLOSE ELSE MELSE M OPENORMAL Statement CLOSE
 						{
 						
-						
+						//ask saleh
+							$$ = new Node(UNDEFYET_t);
 						pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex>(last_br_emit.top(),FIRST);
 						pair<int,BranchLabelIndex> p2 = pair<int,BranchLabelIndex>(last_br_emit.top(),SECOND);
 						$3->truelist =  CodeBuffer::instance().merge($3->truelist , CodeBuffer::instance().makelist(p));
@@ -599,6 +622,8 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 						
 				| BREAK SC 															
 						{
+							//ask saleh
+							$$ = new Node(UNDEFYET_t);
 							auto& scope = symbolTable.scopes_table[symbolTable.scopes_table.size()-1 < 0 ? 0 : symbolTable.scopes_table.size()-1];
 							if(!scope.isLoop){
 								errorUnexpectedBreak(yylineno);
@@ -615,6 +640,8 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 						}
 				| CONTINUE SC 														
 						{
+							//ask saleh
+							$$ = new Node(UNDEFYET_t);
 							auto& scope = symbolTable.scopes_table[symbolTable.scopes_table.size()-1 < 0 ? 0 : symbolTable.scopes_table.size()-1];
 							if(!scope.isLoop){
 								errorUnexpectedContinue(yylineno);
@@ -650,7 +677,9 @@ Call :			ID LPAREN {ParamListStack.push(vector<Node*>()); } ExpList RPAREN
 							
 							
 							callee->reg = a.genCall(callee->name,callee->returnType,callee->paramTypes,args);
-							$$ = callee;
+							//$$ = callee;
+							$$ = new Node(callee->returnType , "" , "" , callee->reg);
+							$$->is_Var = true;
 							
 							
 							ParamListStack.pop();
@@ -673,11 +702,13 @@ Call :			ID LPAREN {ParamListStack.push(vector<Node*>()); } ExpList RPAREN
 							delete $1;
 							
 							
-							$$ = callee;
+							//$$ = callee;
 							args=vec;
 							
 							callee->ValidateParameters(vec,symbolTable);
 							callee->reg = a.genCall(callee->name,callee->returnType,callee->paramTypes,args);
+							$$ = new Node(callee->returnType , "" , "" , callee->reg);
+							$$->is_Var = true;
 							
 							
 						};
@@ -717,7 +748,7 @@ Exp :			LPAREN Exp RPAREN
 				| Exp ADDOPS Exp 													
 						{
 						
-						
+						//cout << "here" << endl;;
 						TokenType old1 = $1->type, old2 = $3->type;
 						if($1->type == FUNCTION_t)
 							$1->type = ((Function*) $1)->returnType;
@@ -756,7 +787,7 @@ Exp :			LPAREN Exp RPAREN
 							//cout << "$1->reg = " << $1->reg << ",   $3->reg = " << $3->reg << endl;
 							$$->reg = a.genAddOp($1,$3,$2->value);
 							}
-
+							//cout << "end for all" <<endl;
 						}
 				| Exp MULTOPS Exp 			
 						{

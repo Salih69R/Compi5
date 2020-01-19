@@ -290,15 +290,18 @@ public:
 	
 	string genCall(string fun_id , TokenType fun_retype , vector<TokenType> params , vector<Node*> reg_args){
 		
-		string tmp_reg, load_str, line , arr_size_inpxels;//helper strings
+		string ret_reg,tmp_reg, load_str, line , arr_size_inpxels;//helper strings
 		
 		if (reg_args.size() == 0){
 			
 			
 			tmp_reg = RegAlloc();
-			CodeBuffer::instance().emit("	" + tmp_reg + " = call " + TokenTypeToLlvmType(fun_retype) + " @" + fun_id + "( )");
 			
-			return tmp_reg;
+			CodeBuffer::instance().emit("	" + tmp_reg + " = call " + TokenTypeToLlvmType(fun_retype) + " @" + fun_id + "( )");
+			ret_reg = RegAlloc();
+			CodeBuffer::instance().emit("	"+ret_reg + " = alloca " + TokenTypeToLlvmType(fun_retype));
+			CodeBuffer::instance().emit("	store " + TokenTypeToLlvmType(fun_retype)+" " + tmp_reg +" , "+TokenTypeToLlvmType(fun_retype)+"* " + ret_reg);
+			return ret_reg;
 			
 		}
 		
@@ -353,12 +356,15 @@ public:
 		else{
 			tmp_reg = RegAlloc();
 			CodeBuffer::instance().emit("	" + tmp_reg + " = call " + TokenTypeToLlvmType(fun_retype) + " @" + fun_id + "(" + print_args(params,args) + ")");
+			ret_reg = RegAlloc();
+			CodeBuffer::instance().emit("	" + ret_reg+" = alloca " + TokenTypeToLlvmType(fun_retype));
+			CodeBuffer::instance().emit("	store " + TokenTypeToLlvmType(fun_retype)+" " + tmp_reg +" , "+TokenTypeToLlvmType(fun_retype)+"* " + ret_reg);
 		}
 		
 		for(int i = 0; i < to_del_args.size(); ++i)
 				delete to_del_args[i];
 			
-		return tmp_reg;
+		return ret_reg;
 	}
 	
 	
@@ -460,7 +466,7 @@ public:
 		
 		string r1_save_reg , r2_save_reg;
 		string load_line , add_line;
-		
+		//cout << "okay" << endl;
 		
 		r1_save_reg = RegAlloc();
 		string type = TokenTypeToLlvmType(r1->type, r1);
@@ -472,7 +478,7 @@ public:
 			load_line = r1_save_reg + " = add " + type + " 0 , " + r1->value ;
 		
 		CodeBuffer::instance().emit("	" + load_line);
-		
+		//cout << "okay2" << endl;
 		
 		
 		r2_save_reg = RegAlloc();
@@ -486,7 +492,7 @@ public:
 			
 		CodeBuffer::instance().emit("	" + load_line);
 		
-		
+		//cout << "okay3" << endl;
 		string res_reg_as_int = RegAlloc();
 		
 		string res_line_as_int = res_reg_as_int+" = " + final_op + " " +TokenTypeToLlvmType(r1->type,r1) + " " + r1_save_reg + " , " + r2_save_reg;
@@ -500,12 +506,12 @@ public:
 			res_reg_as_int = zext_reg;//now this reg has the value
 			
 		}
-		
+		//cout << "okay4" << endl;
 		string res_reg = RegAlloc();
 		CodeBuffer::instance().emit("	" + res_reg + " = alloca " + TokenTypeToLlvmType(r1->type,r1));
 		CodeBuffer::instance().emit("	store "+ TokenTypeToLlvmType(r1->type,r1) + " " + res_reg_as_int + " , " + TokenTypeToLlvmType(r1->type,r1)+"* " + res_reg);
 
-		
+	//	cout << "okay5" << endl;
 		return res_reg;	
 	}
 	

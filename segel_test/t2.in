@@ -3,13 +3,13 @@ int fib(byte n) {
 	
 	
 	
-	int a = fib(n-1b);
+	//int a = fib(n-1b);
 	
-	int x = fib(n-2b);
+	//int x = fib(n-2b);
 	
     
-	//return fib(n-1b) + fib(n-2b);
-	return a + x;
+	return fib(n-1b) + fib(n-2b);
+	//return a + x;
 }
 
 void main() {
@@ -21,4 +21,5 @@ void main() {
         i = i + 1b;
     }
     print("*");
+   return;
 }
