@@ -918,6 +918,8 @@ Exp :			LPAREN Exp RPAREN
 							
 							$$->falselist = CodeBuffer::instance().merge($1->falselist,$3->falselist);
 							$$->falselist = CodeBuffer::instance().merge($$->falselist,l2);
+							$$->truelist = $3->truelist;
+							$$->nextlist = $3->nextlist;
 						
 							last_br_emit.pop();
 							
@@ -960,6 +962,8 @@ Exp :			LPAREN Exp RPAREN
 							
 							$$->truelist = CodeBuffer::instance().merge($1->truelist,$3->truelist);
 							$$->truelist = CodeBuffer::instance().merge($$->truelist,l1);
+							$$->falselist = $3->falselist;
+							$$->nextlist = $3->nextlist;
 						
 							last_br_emit.pop();
 							
@@ -988,6 +992,7 @@ Exp :			LPAREN Exp RPAREN
 						{
 							if(($1->type != INT_t && $1->type != BYTE_t) || ($3->type != INT_t && $3->type != BYTE_t)){
 									errorMismatch(yylineno);
+									
 									delete $1;
 									delete $3;
 									exit(0);
