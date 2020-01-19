@@ -151,6 +151,27 @@ public:
         throw -1;
     }
 	
+	//basically, use this only after generating a ret op to skip the register it needs
+	void regSkip(){
+        for(int i=0; i<REG_NUM; i++){
+            if(isAvail[i]){
+                isAvail[i] = false;
+               
+                return;
+            }
+        }
+        //return "NO";
+        cout << "no more registers available (max regs in use is " << REG_NUM << endl;
+        throw -1;
+    }
+	
+	
+	
+	
+	
+	
+	
+	
 	   void regDealloc(string reg){
         for(int i=0; i<REG_NUM; i++){
             if(regs[i]==reg){
@@ -368,10 +389,14 @@ public:
 
 		}
 		
+		
+		
 	//after ret, the block needs to end in order for lvm to compile, so a return inside an if body for example means having more code after it (the br out of the body for example) 
-	//TODO: find a way to make sure the block ends when a ret op appears ,
 	//simply adding a label won't do because we need to jump to that label, that means more code, 
 	//closing the block with '}' also won't because the rest of the code will be outside the function body if so
+		pool.regSkip();
+		
+		
 		
 	}
 	
