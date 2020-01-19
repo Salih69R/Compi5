@@ -924,22 +924,46 @@ Exp :			LPAREN Exp RPAREN
 
 						}
 
-				| Exp OR M Exp 														
+				| checkBoolExp OR checkBoolExp ANDGEN M MAKE_IF_BR M												
 						{
-							if($1->type != BOOL_t || $4->type != BOOL_t){
+						
+							if($1->type != BOOL_t || $3->type != BOOL_t){
 									errorMismatch(yylineno);
 									delete $1;
-									delete $4;
+									delete $3;
 									exit(0);
 							}
-							$$ = new Node(BOOL_t , "" , "false");
+							
+							
+							pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex>(last_br_emit.top(),FIRST);
+							pair<int,BranchLabelIndex> p2 = pair<int,BranchLabelIndex>(last_br_emit.top(),SECOND);
+							auto l1 =  CodeBuffer::instance().makelist(p);
+							auto l2 =  CodeBuffer::instance().makelist(p2);
+						
+								
+							CodeBuffer::instance().bpatch($1->falselist,$5->reg);
+							CodeBuffer::instance().bpatch($4->nextlist,$5->reg);
+							CodeBuffer::instance().bpatch(l2,$7->reg);
+							
+							
+							$$ = new Node(BOOL_t , "" ,"",a.RegAlloc());
+							$$->is_Var = $1->is_Var;
+							
+							if (!($1->is_Var)){
+								$$->value = $1->value;
+								
+							}
 							
 							//TODO: fix this
-							a.genBool($$);
+							a.genBool($$,$1->reg);
 							
-							CodeBuffer::instance().bpatch($1->falselist,$3->reg);
-							$$->truelist = CodeBuffer::instance().merge($1->truelist,$4->truelist);
-							$$->falselist = $4->falselist;
+							
+							$$->truelist = CodeBuffer::instance().merge($1->truelist,$3->truelist);
+							$$->truelist = CodeBuffer::instance().merge($$->truelist,l1);
+						
+							last_br_emit.pop();
+							
+
 						}
 
 				| Exp RELATIONOP Exp 												
