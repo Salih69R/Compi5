@@ -536,28 +536,42 @@ public:
 	
 	string genBoolFromRelOp(Node* E1 , Node* E2, string op, string* resultVal){
 		string reg = RegAlloc();
+		CodeBuffer::instance().emit("	" + reg + " = alloca i1");
 		
 		//finding type to know if using signed or unsigned ops
-		TokenType res_type = E1->type;
-		if(E2->type != INT_t)
-			res_type = E2->type;
+		TokenType res_type = E1->type == BYTE_t && E2->type == BYTE_t ? BYTE_t : INT_t;
+		
 		string final_op = res_type == INT_t ? opToCommand(op) : opToCommandU(op);
 		
-		string r1_save_reg = E1->reg , r2_save_reg = E2->reg;
+		string r1_save_reg = RegAlloc();
+		string r2_save_reg = RegAlloc();;
 		
 		if(E1->is_Var){
-			r1_save_reg = RegAlloc();
+			//r1_save_reg = RegAlloc();
 			CodeBuffer::instance().emit("	" + r1_save_reg + " = load i32, i32* " + E1->reg);
 		}
+		if(!(E1->is_Var)){
+			CodeBuffer::instance().emit("	" + r1_save_reg + " = add i32  0 , " + E1->value);
+			
+		}
 		if(E2->is_Var){
-			r2_save_reg = RegAlloc();
+			//r2_save_reg = RegAlloc();
 			CodeBuffer::instance().emit("	" + r2_save_reg + " = load i32, i32* " + E2->reg);
 		}
+		if(!(E2->is_Var)){
+			CodeBuffer::instance().emit("	" + r2_save_reg + " = add i32  0 , " + E2->value);
+			
+		}
+		
+		string tmp_reg = RegAlloc();
+		CodeBuffer::instance().emit("	" + tmp_reg + " = icmp " + final_op + " " + TokenTypeToLlvmType(res_type) + " "+ r1_save_reg + " , " + r2_save_reg);
+		CodeBuffer::instance().emit("	store i1 " + tmp_reg +" , i1* " + reg);
+		return reg;
 		
 		
 		//first label is true, second is false
-		int i1 = CodeBuffer::instance().emit("	br i1 " + r1_save_reg + " " + final_op + " " + r2_save_reg + ", label @, label @");
 		
+		/*
 		string trueL = CodeBuffer::instance().genLabel();
 		
 		CodeBuffer::instance().emit("	" + reg + " = add 0 , 1");
@@ -586,7 +600,7 @@ public:
 		
 		auto listDone = CodeBuffer::instance().merge(listDone1,listDone2);
 		CodeBuffer::instance().bpatch(listDone, DoneL);
-		
+		*/
 	}
 	
 	

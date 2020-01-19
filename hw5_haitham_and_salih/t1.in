@@ -5,8 +5,8 @@
 
 void main()
 {
-	
-	if (false and true){
+	bool a = true;
+	if (5b < 4b){
 	print("hi");
 	}
 	print("after");

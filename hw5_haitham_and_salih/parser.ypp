@@ -978,7 +978,7 @@ Exp :			LPAREN Exp RPAREN
 							}
 							
 							$$ = new Node(BOOL_t);
-							
+							$$->is_Var = true;
 								
 								
 							$$->reg = a.genBoolFromRelOp($1,$3,$2->value, &($$->value));
@@ -993,6 +993,7 @@ Exp :			LPAREN Exp RPAREN
 									exit(0);
 							}
 							$$ = new Node(BOOL_t);
+								$$->is_Var = true;
 							$$->reg = a.genBoolFromRelOp($1,$3,$2->value, &($$->value));
 						}
 
