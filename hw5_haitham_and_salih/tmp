@@ -8,27 +8,119 @@
   define void @print(i8*) { 
   call i32 (i8*, ...) @printf(i8* getelementptr ([2 x i8], [2 x i8]* @.str_specifier, i32 0, i32 0), i8* %0) 
   ret void } 
+define i32 @fib(i32) {
+fib:
+
+	%1 = alloca i32
+	store i32 %0 , i32* %1
+	%2 = alloca i1
+	%3 = load i32, i32* %1
+	%4 = add i32  0 , 0
+	%5 = icmp eq  i32 %3 , %4
+	store i1 %5 , i1* %2
+	%6 = alloca i1
+	%7 = load i32, i32* %1
+	%8 = add i32  0 , 1
+	%9 = icmp eq  i32 %7 , %8
+	store i1 %9 , i1* %6
+	br label %label_26
+label_26:
+	%10 = load i1, i1* %6
+	br i1 %10 , label %label_35, label %label_29
+label_29:
+	%11 = alloca i1
+	%12 = load i1 , i1* %2
+	store i1 %12 , i1* %11
+	%13 = load i1, i1* %11
+	br i1 %13 , label %label_35, label %label_39
+label_35:
+	ret i32 1
+label_37:
+	br label %label_39
+label_39:
+	%14 = load i32, i32* %1
+	%15 = add i32 0 , 1
+	%16 = sub  i32 %14 , %15
+	%17 = trunc i32 %16 to i8
+	%18 = zext i8 %17 to i32
+	%19 = alloca i32
+	store i32 %18 , i32* %19
+	%20 = load i32 , i32* %19
+	%21 = call i32 @fib(i32 %20)
+	%22 = alloca i32
+	store i32 %21 , i32* %22
+	%23 = load i32, i32* %1
+	%24 = add i32 0 , 2
+	%25 = sub  i32 %23 , %24
+	%26 = trunc i32 %25 to i8
+	%27 = zext i8 %26 to i32
+	%28 = alloca i32
+	store i32 %27 , i32* %28
+	%29 = load i32 , i32* %28
+	%30 = call i32 @fib(i32 %29)
+	%31 = alloca i32
+	store i32 %30 , i32* %31
+	%32 = load i32, i32* %22
+	%33 = load i32, i32* %31
+	%34 = add  i32 %32 , %33
+	%35 = alloca i32
+	store i32 %34 , i32* %35
+	%36 = load i32 , i32* %35
+	ret i32 %36
+label_69:
+}
 define void @main() {
 main:
 
-	%0 = add i1 0 , 0
+	%0 = alloca i32
+	store i32 0 , i32* %0
+	br label %label_77
+label_77:
 	%1 = alloca i1
-	store i1 false , i1* %1
-	br label %label_17
-label_17:
-	%2 = add i1 0 , 1
-	br i1 %2 , label %label_20, label %label_27
-label_20:
-	%3 = alloca [4 x i8]
-	store [4 x i8] c"b4\0A\00" , [4 x i8]* %3
-	%4 = getelementptr [4 x i8] , [4 x i8]* %3, i64 0, i64 0
-	call void @print(i8* %4)
-	br label %label_27
-	br label %label_17
-label_27:
-	%6 = alloca [7 x i8]
-	store [7 x i8] c"after\0A\00" , [7 x i8]* %6
-	%7 = getelementptr [7 x i8] , [7 x i8]* %6, i64 0, i64 0
-	call void @print(i8* %7)
+	%2 = load i32, i32* %0
+	%3 = add i32  0 , 10
+	%4 = icmp slt  i32 %2 , %3
+	store i1 %4 , i1* %1
+	%5 = load i1, i1* %1
+	br i1 %5 , label %label_85, label %label_118
+label_85:
+	%6 = load i32 , i32* %0
+	%7 = call i32 @fib(i32 %6)
+	call void @printi(i32 %7)
+	%8 = load i32, i32* %0
+	%9 = add i32 0 , 1
+	%10 = add  i32 %8 , %9
+	%11 = alloca i32
+	store i32 %10 , i32* %11
+	%12 = alloca i1
+	%13 = load i32, i32* %11
+	%14 = add i32  0 , 10
+	%15 = icmp slt  i32 %13 , %14
+	store i1 %15 , i1* %12
+	%16 = load i1, i1* %12
+	br i1 %16 , label %label_101, label %label_107
+label_101:
+	%17 = alloca [3 x i8]
+	store [3 x i8] c"*\0A\00" , [3 x i8]* %17
+	%18 = getelementptr [3 x i8] , [3 x i8]* %17, i64 0, i64 0
+	call void @print(i8* %18)
+	br label %label_107
+label_107:
+	%19 = load i32, i32* %0
+	%20 = add i32 0 , 1
+	%21 = add  i32 %19 , %20
+	%22 = trunc i32 %21 to i8
+	%23 = zext i8 %22 to i32
+	%24 = alloca i32
+	store i32 %23 , i32* %24
+	%25 = load i32 , i32* %24
+	store i32 %25 , i32* %0
+	br label %label_77
+label_118:
+	%26 = alloca [3 x i8]
+	store [3 x i8] c"*\0A\00" , [3 x i8]* %26
+	%27 = getelementptr [3 x i8] , [3 x i8]* %26, i64 0, i64 0
+	call void @print(i8* %27)
 	ret void
+label_124:
 }

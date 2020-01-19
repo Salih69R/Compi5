@@ -626,20 +626,10 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex> ( i, FIRST);
 							Cont_labels.top().push_back(p);
 						};
-checkBoolExp :     Exp {
-				
-						if($1->type != BOOL_t)
-						{
-							errorMismatch(yylineno);
-							exit(0);
-						}
-						
-						last_bool_exp = $1;
-						//$$ = $1;
 
-					}
 Call :			ID LPAREN {ParamListStack.push(vector<Node*>()); } ExpList RPAREN 										
 						{
+							
 						
 							Function* callee = (Function*)symbolTable.getVar($1->name);
 							auto& vec = ParamListStack.top();
@@ -928,7 +918,7 @@ Exp :			LPAREN Exp RPAREN
 
 				| checkBoolExp OR checkBoolExp ANDGEN M MAKE_IF_BR M												
 						{
-						
+							
 							if($1->type != BOOL_t || $3->type != BOOL_t){
 									errorMismatch(yylineno);
 									delete $1;
@@ -972,7 +962,6 @@ Exp :			LPAREN Exp RPAREN
 
 				| Exp RELATIONOP Exp 												
 						{
-							
 							
 							if( ($1->type != INT_t && $1->type != BYTE_t) || ($3->type != INT_t && $3->type != BYTE_t)){
 									errorMismatch(yylineno);
@@ -1042,6 +1031,21 @@ Exp :			LPAREN Exp RPAREN
 						};
 						
 						
+checkBoolExp :     Exp {
+						
+						//cout << "\t\t\t\t\t  $1->type = " << $1->type << "\t $1->reg = " << $1->reg  << "\t $1->value = " <<$1->value <<endl;
+						
+						if($1->type != BOOL_t)
+						{
+							errorMismatch(yylineno);
+							exit(0);
+						}
+						
+						last_bool_exp = $1;
+						//$$ = $1;
+
+					}
+					
 OPENORMAL:					{symbolTable.openScope(NORMAL);};
 OPENLOOP:					{symbolTable.openScope(LOOP);};
 CLOSE:						{symbolTable.closeScope();};
