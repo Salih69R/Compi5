@@ -635,7 +635,6 @@ Call :			ID LPAREN {ParamListStack.push(vector<Node*>()); } ExpList RPAREN
 							auto& vec = ParamListStack.top();
 
 
-
 							if (callee == nullptr || callee->type != FUNCTION_t){
 								
 								errorUndefFunc(yylineno, $1->name);
@@ -652,6 +651,7 @@ Call :			ID LPAREN {ParamListStack.push(vector<Node*>()); } ExpList RPAREN
 							
 							callee->reg = a.genCall(callee->name,callee->returnType,callee->paramTypes,args);
 							$$ = callee;
+							
 							
 							ParamListStack.pop();
 							
@@ -679,7 +679,7 @@ Call :			ID LPAREN {ParamListStack.push(vector<Node*>()); } ExpList RPAREN
 							callee->ValidateParameters(vec,symbolTable);
 							callee->reg = a.genCall(callee->name,callee->returnType,callee->paramTypes,args);
 							
-
+							
 						};
 
 ExpList :		Exp 														
@@ -715,7 +715,18 @@ Exp :			LPAREN Exp RPAREN
 						{$$ = $2;}
 
 				| Exp ADDOPS Exp 													
-						{ if (($1->type != INT_t && $1->type !=BYTE_t) || ($3->type != INT_t && $3->type != BYTE_t)){
+						{
+						
+						
+						TokenType old1 = $1->type, old2 = $3->type;
+						if($1->type == FUNCTION_t)
+							$1->type = ((Function*) $1)->returnType;
+						if($3->type == FUNCTION_t)
+							$3->type = ((Function*) $3)->returnType;
+						
+						
+
+						if (($1->type != INT_t && $1->type !=BYTE_t) || ($3->type != INT_t && $3->type != BYTE_t)){
 							errorMismatch(yylineno);
 							delete $1;
 							delete $3;
@@ -725,19 +736,38 @@ Exp :			LPAREN Exp RPAREN
 							
 							$$ = new Node(BYTE_t);
 							$$->is_Var = true;
+							
+							
+							$1->type = old1;
+							$3->type = old2;	
 							$$->reg = a.genAddOp($1,$3,$2->value,BYTE_t);
 						}
 						else{ 
 							
+							
 							$$= new Node(INT_t);
 							//its valued is save in an allocated place , so we need that.
 							$$->is_Var = true;
+							
+							$1->type = old1;
+							$3->type = old2;	
+							
+							
+							//cout << "$1->reg = " << $1->reg << ",   $3->reg = " << $3->reg << endl;
 							$$->reg = a.genAddOp($1,$3,$2->value);
 							}
 
 						}
-				| Exp MULTOPS Exp 													
-						{ if (($1->type != INT_t && $1->type !=BYTE_t) || ($3->type != INT_t && $3->type != BYTE_t)){
+				| Exp MULTOPS Exp 			
+						{
+						TokenType old1 = $1->type, old2 = $3->type;
+						if($1->type == FUNCTION_t)
+							$1->type = ((Function*) $1)->returnType;
+						if($3->type == FUNCTION_t)
+							$3->type = ((Function*) $3)->returnType;
+
+				
+						 if (($1->type != INT_t && $1->type !=BYTE_t) || ($3->type != INT_t && $3->type != BYTE_t)){
 							errorMismatch(yylineno);
 							delete $1;
 							delete $3;
@@ -747,12 +777,18 @@ Exp :			LPAREN Exp RPAREN
 							
 							$$ = new Node(BYTE_t);
 							$$->is_Var = true;
+							
+							$1->type = old1;
+							$3->type = old2;	
 							$$->reg = a.genAddOp($1,$3,$2->value,BYTE_t);
 						}
 						else{ 
 							$$= new Node(INT_t);
 							//its valued is save in an allocated place , so we need that.
 							$$->is_Var = true;
+							
+							$1->type = old1;
+							$3->type = old2;	
 							$$->reg = a.genAddOp($1,$3,$2->value);
 							}
 
@@ -849,11 +885,7 @@ Exp :			LPAREN Exp RPAREN
 						
 				| NOT checkBoolExp 															
 						{
-							if($2->type != BOOL_t){
-									errorMismatch(yylineno);
-									delete $2;
-									exit(0);
-							}
+							
 						
 							string my_reg = a.RegAlloc();
 							$$ = new Node(BOOL_t , "" , "",my_reg);
@@ -875,12 +907,7 @@ Exp :			LPAREN Exp RPAREN
 				| checkBoolExp AND checkBoolExp ANDGEN M MAKE_IF_BR M												
 						{
 						
-							if($1->type != BOOL_t || $3->type != BOOL_t){
-									errorMismatch(yylineno);
-									delete $1;
-									delete $3;
-									exit(0);
-							}
+							
 							
 							
 							pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex>(last_br_emit.top(),FIRST);
@@ -919,12 +946,7 @@ Exp :			LPAREN Exp RPAREN
 				| checkBoolExp OR checkBoolExp ANDGEN M MAKE_IF_BR M												
 						{
 							
-							if($1->type != BOOL_t || $3->type != BOOL_t){
-									errorMismatch(yylineno);
-									delete $1;
-									delete $3;
-									exit(0);
-							}
+							
 							
 							
 							pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex>(last_br_emit.top(),FIRST);
@@ -963,6 +985,13 @@ Exp :			LPAREN Exp RPAREN
 				| Exp RELATIONOP Exp 												
 						{
 							
+							TokenType old1 = $1->type, old2 = $3->type;
+							if($1->type == FUNCTION_t)
+								$1->type = ((Function*) $1)->returnType;
+							if($3->type == FUNCTION_t)
+								$3->type = ((Function*) $3)->returnType;
+							
+							
 							if( ($1->type != INT_t && $1->type != BYTE_t) || ($3->type != INT_t && $3->type != BYTE_t)){
 									errorMismatch(yylineno);
 									delete $1;
@@ -973,12 +1002,21 @@ Exp :			LPAREN Exp RPAREN
 							$$ = new Node(BOOL_t);
 							$$->is_Var = true;
 								
-								
+							$1->type = old1;
+							$3->type = old2;
+							
 							$$->reg = a.genBoolFromRelOp($1,$3,$2->value, &($$->value));
 						}
 
 				| Exp EQUALOP Exp 													
 						{
+						
+							TokenType old1 = $1->type, old2 = $3->type;
+							if($1->type == FUNCTION_t)
+								$1->type = ((Function*) $1)->returnType;
+							if($3->type == FUNCTION_t)
+								$3->type = ((Function*) $3)->returnType;
+							
 							if(($1->type != INT_t && $1->type != BYTE_t) || ($3->type != INT_t && $3->type != BYTE_t)){
 									errorMismatch(yylineno);
 									
@@ -987,7 +1025,11 @@ Exp :			LPAREN Exp RPAREN
 									exit(0);
 							}
 							$$ = new Node(BOOL_t);
-								$$->is_Var = true;
+							$$->is_Var = true;
+							
+							$1->type = old1;
+							$3->type = old2;
+							
 							$$->reg = a.genBoolFromRelOp($1,$3,$2->value, &($$->value));
 						}
 
@@ -1000,12 +1042,17 @@ Exp :			LPAREN Exp RPAREN
 								exit(0);
 								}
 						
+						
+						//TODO: fix situation where EXP is a function call
+						
+							
 							if($4->type != ENUM_t && !(symbolTable.isThereEnumContains($4->name))){
 								delete $2;
 								
 								errorMismatch(yylineno);
 								exit(0);
 							}
+							
 							Node* enum_var = symbolTable.getVar($4->name);
 							if (enum_var == nullptr && !(symbolTable.isThereEnumContains($4->name))){
 								delete $2;
@@ -1032,8 +1079,10 @@ Exp :			LPAREN Exp RPAREN
 						
 						
 checkBoolExp :     Exp {
-						
-						//cout << "\t\t\t\t\t  $1->type = " << $1->type << "\t $1->reg = " << $1->reg  << "\t $1->value = " <<$1->value <<endl;
+						TokenType old1 = $1->type;
+						if($1->type == FUNCTION_t)
+							$1->type = ((Function*) $1)->returnType;
+
 						
 						if($1->type != BOOL_t)
 						{
@@ -1041,8 +1090,9 @@ checkBoolExp :     Exp {
 							exit(0);
 						}
 						
+						$1->type = old1;
 						last_bool_exp = $1;
-						//$$ = $1;
+						$$ = $1;
 
 					}
 					

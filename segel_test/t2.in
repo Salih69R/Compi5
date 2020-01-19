@@ -1,12 +1,14 @@
 int fib(byte n) {
     if (n == 0 or n == 1) return 1;
 	
+	
+	
 	int a = fib(n-1b);
 	
-
 	int x = fib(n-2b);
 	
     
+	//return fib(n-1b) + fib(n-2b);
 	return a + x;
 }
 

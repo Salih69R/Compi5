@@ -461,39 +461,35 @@ public:
 		string r1_save_reg , r2_save_reg;
 		string load_line , add_line;
 		
-		if(r1->is_Var){
-			r1_save_reg = RegAlloc();
-			string type = TokenTypeToLlvmType(r1->type);
+		
+		r1_save_reg = RegAlloc();
+		string type = TokenTypeToLlvmType(r1->type, r1);
+		if(r1->is_Var && r1->type != FUNCTION_t)
 			load_line = r1_save_reg + " = load " + type + ", "+ type + "* " + r1->reg ;
-			CodeBuffer::instance().emit("	" + load_line);
-		}
+		else if(r1->type == FUNCTION_t) 
+			load_line = r1_save_reg + " = add " + type + " 0 , " + r1->reg ;
+		else
+			load_line = r1_save_reg + " = add " + type + " 0 , " + r1->value ;
 		
-		if (!(r1->is_Var)){
-			r1_save_reg = RegAlloc();
-			string type = TokenTypeToLlvmType(r1->type);
-			add_line = r1_save_reg + " = add " + type + " 0 , " + r1->value ;
-			CodeBuffer::instance().emit("	" + add_line);
-			
-		}
+		CodeBuffer::instance().emit("	" + load_line);
 		
-		if(r2->is_Var){
-			r2_save_reg = RegAlloc();
-			string type = TokenTypeToLlvmType(r2->type);
+		
+		
+		r2_save_reg = RegAlloc();
+		type = TokenTypeToLlvmType(r2->type,r2);
+		if(r2->is_Var && r1->type != FUNCTION_t)
 			load_line = r2_save_reg + " = load " + type + ", "+ type + "* " + r2->reg ;
-			CodeBuffer::instance().emit("	" + load_line);
-		}
-		
-		if (!(r2->is_Var)){
-			r2_save_reg = RegAlloc();
-			string type = TokenTypeToLlvmType(r2->type);
-			add_line = r2_save_reg + " = add " + type + " 0 , " + r2->value ;
-			CodeBuffer::instance().emit("	" + add_line);
+		else if(r2->type == FUNCTION_t) 
+			load_line = r2_save_reg + " = add " + type + " 0 , " + r2->reg ;
+		else
+			load_line = r2_save_reg + " = add " + type + " 0 , " + r2->value ;
 			
-		}
+		CodeBuffer::instance().emit("	" + load_line);
+		
 		
 		string res_reg_as_int = RegAlloc();
 		
-		string res_line_as_int = res_reg_as_int+" = " + final_op + " " +TokenTypeToLlvmType(r1->type) + " " + r1_save_reg + " , " + r2_save_reg;
+		string res_line_as_int = res_reg_as_int+" = " + final_op + " " +TokenTypeToLlvmType(r1->type,r1) + " " + r1_save_reg + " , " + r2_save_reg;
 		
 		CodeBuffer::instance().emit("	" + res_line_as_int);
 		if(r1->type == BYTE_t && r2->type == BYTE_t){
@@ -506,12 +502,21 @@ public:
 		}
 		
 		string res_reg = RegAlloc();
-		CodeBuffer::instance().emit("	" + res_reg + " = alloca " + TokenTypeToLlvmType(r1->type));
-		CodeBuffer::instance().emit("	store "+ TokenTypeToLlvmType(r1->type) + " " + res_reg_as_int + " , " + TokenTypeToLlvmType(r1->type)+"* " + res_reg);
+		CodeBuffer::instance().emit("	" + res_reg + " = alloca " + TokenTypeToLlvmType(r1->type,r1));
+		CodeBuffer::instance().emit("	store "+ TokenTypeToLlvmType(r1->type,r1) + " " + res_reg_as_int + " , " + TokenTypeToLlvmType(r1->type,r1)+"* " + res_reg);
 
 		
 		return res_reg;	
 	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	///////////////////// mefne bakarah and bool stuf/////////////////////////////
 	
@@ -533,14 +538,6 @@ public:
 		return i1;
 		
 	}
-	
-	
-	
-	
-	
-	
-	
-	
 	
 	
 	
