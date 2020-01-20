@@ -1,17 +1,15 @@
-bool func5(bool x) {
-	//return x or not x;
-	
-	if(x or not x)
-		return true;
-	else
-		return false;
-	
-}
 
+bool func5(bool x) {
+	return x or not x;
+}
 
 void main() {
 	
 	
 	if (func5(true)) print("true"); else print("false");
-    
+  
+	
+	
+	
+	
 }

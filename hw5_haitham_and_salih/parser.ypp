@@ -20,7 +20,8 @@
 	stack<vector<Node*>> ParamListStack = stack<vector<Node*>>();
 	Genreator a = Genreator();
 	vector<Node*> args = vector<Node*>(); // this is for call
-	bool return_flag = true;
+	stack<bool> return_flag;
+	bool return_flag_value;
 	
 	
 		//these are for if, and loops and shit like that
@@ -64,7 +65,9 @@ Funcs :			/*epsilon*/
 
 
 FuncDecl :		RetType ID  {
-							return_flag = true;
+							return_flag = stack<bool>();
+							return_flag.push(true); 
+							
 							Variable* var = symbolTable.getVar($2->name);
 							Variable* var_as_class = symbolTable.getVar("enum "+$2->name);
 							if(var != nullptr || symbolTable.isThereEnumContains($2->name) || var_as_class != nullptr){
@@ -95,7 +98,7 @@ FuncDecl :		RetType ID  {
 						}
 						Statements {
 							
-							if (return_flag){
+							if (return_flag.top()){
 								a.genReturn(curFunc);
 							}
 							
@@ -465,7 +468,10 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							}
 							
 							a.genReturn(scope.curFunc);
-							return_flag = false;
+							
+							
+							return_flag.pop();
+							return_flag.push(false);
 							//ask saleh
 							$$ = new Node(UNDEFYET_t);
 						}
@@ -493,16 +499,21 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 								
 							}
 							
-							//cout << "return3" << endl;
 							a.genReturn(f , $2);
-							return_flag = false;
-							//cout << "return4" << endl;
+							
+							return_flag.pop();
+							return_flag.push(false);
 							$$ = new Node(UNDEFYET_t);
 						}
 						
 					
-				| IF LPAREN checkBoolExp MAKE_IF_BR M RPAREN OPENORMAL Statement CLOSE  									
+				| IF LPAREN checkBoolExp MAKE_IF_BR M RPAREN OPENORMAL  Statement  CLOSE  									
 						{
+						
+						//return_flag.pop();
+					
+						//{return_flag.push(true);}
+						
 						//ask saleh
 							$$ = new Node(UNDEFYET_t);
 						pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex>(last_br_emit.top(),FIRST);
@@ -514,6 +525,7 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 						
 						//-------
 						$$->nextlist = CodeBuffer::instance().merge($8->nextlist , $3->falselist);
+						
 						
 						int i = CodeBuffer::instance().emit("	br label @");
 						string DoneL =  CodeBuffer::instance().genLabel();
@@ -616,6 +628,7 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 					last_br_emit.pop();
 					Break_labels.pop();
 					Cont_labels.pop();
+					return_flag.pop();
 				}
 						 
 						
@@ -1175,9 +1188,22 @@ checkBoolExp :     Exp {
 
 					}
 					
-OPENORMAL:					{symbolTable.openScope(NORMAL);};
-OPENLOOP:					{symbolTable.openScope(LOOP);};
-CLOSE:						{symbolTable.closeScope();};
+OPENORMAL:					{
+								symbolTable.openScope(NORMAL);
+								return_flag.push(true);//for new if/while scope
+							};
+							
+OPENLOOP:					{
+								symbolTable.openScope(LOOP);
+								return_flag.push(true);//for new if/while scope
+							};
+CLOSE:						{
+								symbolTable.closeScope();
+								return_flag.pop();
+							};
+
+
+
 
 MAKE_WHILE:				{
 							last_while_emit.push( CodeBuffer::instance().emit("	br label @") );
