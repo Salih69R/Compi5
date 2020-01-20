@@ -1,0 +1,9 @@
+
+void f(){
+	print("boy");
+}
+
+void main(){
+	print("apple ");
+	f();
+}

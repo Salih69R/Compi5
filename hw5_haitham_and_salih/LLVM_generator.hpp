@@ -232,6 +232,20 @@ public:
 		CodeBuffer::instance().emit("  define void @print(i8*) { ");
 		CodeBuffer::instance().emit("  call i32 (i8*, ...) @printf(i8* getelementptr ([2 x i8], [2 x i8]* @.str_specifier, i32 0, i32 0), i8* %0) ");
 		CodeBuffer::instance().emit("  ret void } ");
+		
+		CodeBuffer::instance().emit("  define void @checkdiv(i32) { ");
+		CodeBuffer::instance().emit("	%cond = icmp eq i32 %0 , 0" );
+		CodeBuffer::instance().emit("	br i1 %cond , label %zero_div , label %good");
+		CodeBuffer::instance().emit("zero_div:");
+		CodeBuffer::instance().emit("	%str = alloca [ 24 x i8]");
+		CodeBuffer::instance().emit("	store [24 x i8] c\"Error division by zero\\0A\\00\" , [24 x i8]* %str");
+		CodeBuffer::instance().emit("	%new_str = getelementptr [24 x i8] , [24 x i8]* %str, i64 0, i64 0");
+		CodeBuffer::instance().emit("	call void @print(i8* %new_str)");
+		CodeBuffer::instance().emit("	call void @exit(i32 0)");
+		CodeBuffer::instance().emit("	br label %good");
+		CodeBuffer::instance().emit("good:");
+		
+		CodeBuffer::instance().emit("  ret void  } ");
 
 	}
 	
@@ -421,9 +435,30 @@ public:
 			line = r2->is_Var ? TokenTypeToLlvmType(r2->type, r2)+ "* " + r2->reg   : TokenTypeToLlvmType(r2->type, r2) + " "+ r2->value; 
 			
 			if(r2->type == ENUM_t){
-			int ordered_num = get_enum_valued_order( (Enum_var*) r2);	
-				CodeBuffer::instance().emit("	store i32 " + to_string(ordered_num) + " , i32*" + " "+r1); 
+				if (r2->is_Var){
+						if( r2->reg == ""){
+							r2->reg = Var_Alloc();
+							int ordered_num = get_enum_valued_order( (Enum_var*) r2);	
+							CodeBuffer::instance().emit("	store i32 " + to_string(ordered_num) + " , i32*" + " "+r2->reg); 
+					
+
+							
+						}
+						//r2->reg = r2->reg == "" ? RegAlloc() : r2->reg;
+						string tmp_reg = RegAlloc();
+						CodeBuffer::instance().emit("	"+tmp_reg + " = load i32 , i32* " + r2->reg);
+						//r1 = Var_Alloc();
+						CodeBuffer::instance().emit("	store i32 " + tmp_reg + " , i32* " + r1);
+						return;
+					
+				}
+				else{
+					int ordered_num = get_enum_valued_order( (Enum_var*) r2);	
+					CodeBuffer::instance().emit("	store i32 " + to_string(ordered_num) + " , i32*" + " "+r1); 
+					cout << "error in else in enum in var alloc and assing" << endl;
+					
 				return;
+				}
 				
 			}
 			
@@ -547,7 +582,21 @@ public:
 	
 	
 	
-	
+	void CheckDivZero(Node* mkam){
+		
+		string val_reg = mkam->reg;
+		if(mkam->is_Var){
+			val_reg = RegAlloc();
+			CodeBuffer::instance().emit("	" + val_reg + " = load i32 , " + TokenTypeToLlvmType(mkam->type) + "* " + mkam->reg);
+		}
+		
+		//Error division by zero
+		
+		CodeBuffer::instance().emit("	call void @checkdiv(i32 " + val_reg + " )");
+		//check this
+		
+		
+	}
 	
 	
 	
@@ -646,9 +695,7 @@ public:
 	
 
 	
-	void assign_enum_var();
 	
-	void gen_and_assign_enum_var();
 	
 	
 };

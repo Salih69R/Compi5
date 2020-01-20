@@ -16,4 +16,5 @@ void main()
 {
 	enum days d = TUESDAY;
 	checkDay(d);
+	
 }

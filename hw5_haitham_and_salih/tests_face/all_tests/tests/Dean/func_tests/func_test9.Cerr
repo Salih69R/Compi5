@@ -1,0 +1,8 @@
+[[[ added func: print with 1 params and label: ]]]
+[[[ added func: printi with 1 params and label: ]]]
+print param:2(1)
+printi param:3(1)
+[FIRST_PROGRAM_POINT]
+[set_func_label] label print for function print
+[set_func_label] label printi for function printi
+(END_OF)  [FIRST_PROGRAM_POINT]

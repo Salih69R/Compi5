@@ -1,0 +1,17 @@
+
+
+void f(bool cond){
+	if(cond){
+		print("boy");
+		f(false);
+	}else{
+		print("girl");
+	}
+	
+}	
+
+
+void main(){
+	print("apple ");
+	f(true);
+}

@@ -804,6 +804,11 @@ Exp :			LPAREN Exp RPAREN
 							delete $3;
 							exit(0);
 						}
+						
+						
+						if($2->value == "/"){
+							a.CheckDivZero($3);
+						}
 						if ($1->type == BYTE_t && $3->type == BYTE_t){
 							
 							$$ = new Node(BYTE_t);
@@ -841,7 +846,10 @@ Exp :			LPAREN Exp RPAREN
 						if (symbolTable.isThereEnumContains($1->name) && var == nullptr){
 
 							auto tmp = symbolTable.FindEnumContains($1->name);//we know this isn't nullptr for sure
-							$$ = new Enum_var(ENUM_t,  tmp,  $1->name,0,$1->name);
+							string enum_reg = a.Var_Alloc();
+							$$ = new Enum_var(ENUM_t,  tmp,  $1->name,0,$1->name,enum_reg);
+							int ordered_num = get_enum_valued_order( (Enum_var*) $$);	
+							CodeBuffer::instance().emit("	store i32 " + to_string(ordered_num) + " , i32* " + enum_reg);
 							
 							//TODO: add emit code for enum case, if needed(im guessing yes needed)
 						}
@@ -1103,15 +1111,15 @@ Exp :			LPAREN Exp RPAREN
 							
 							//Enum_class* enum_class = symbolTable.FindEnumContains(enum_var->value);
 							
-							if ($4->is_Var){
-							string tmp_reg = a.RegAlloc();
-							CodeBuffer::instance().emit("	"+tmp_reg + " = load i32 , i32* " + $4->reg);
-							$$->reg = a.Var_Alloc();
-							CodeBuffer::instance().emit("	store i32 " + tmp_reg + " , i32* " + $$->reg);
-							}else{
+							//if ($4->is_Var){
+							//string tmp_reg = a.RegAlloc();
+							//CodeBuffer::instance().emit("	"+tmp_reg + " = load i32 , i32* " + $4->reg);
+							//$$->reg = a.Var_Alloc();
+							//CodeBuffer::instance().emit("	store i32 " + tmp_reg + " , i32* " + $$->reg);
+							//}else{
 							$$->reg = a.Var_Alloc();
 							a.Var_Alloc_And_Assign($$->reg ,INT_t,enum_var,nullptr);
-							}
+							//}
 							
 						};
 						
@@ -1197,6 +1205,8 @@ int main()
 	symbolTable.scopes_table.pop_back();
 	symbolTable.offset_stack.pop();
 	a.Gen_Printers();
+	
+	
 	
 	yyparse();
 	

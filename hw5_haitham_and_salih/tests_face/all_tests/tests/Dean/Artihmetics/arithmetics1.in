@@ -1,0 +1,19 @@
+void main()
+{
+	int a1 = 4 + 2*3;
+	printi(a1); 
+	int a11 = 2*3+4;
+	printi(a11);
+	int a2 = (3*2-2);
+	int a22 = (2-3*2);
+	printi(a2);
+	printi(a22);
+	int a3 = 14-23*1+9*1+15/15+2*0;
+	printi(a3);
+	int a4 = 56/4+4;
+	printi(a4);
+	int a5 = (4*(4)+4);
+	printi(a5);
+	int a6 = 64/2/2;
+	printi(a6);
+}

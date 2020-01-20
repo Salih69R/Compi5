@@ -1,0 +1,44 @@
+#!/bin/bash
+chmod 700 ./*
+cd ..
+unzip *.zip 
+make
+cd scripts
+echo ""
+echo ""
+./run_arithmetic
+echo ""
+echo ""
+./run_basic_exps
+echo ""
+echo ""
+./run_boolean_tests
+echo ""
+echo ""
+./run_func_tests
+echo ""
+echo ""
+./run_if_tests
+echo ""
+echo ""
+./run_var_tests
+echo ""
+echo ""
+./run_more_tests
+echo ""
+echo ""
+./run_overflow_tests
+echo ""
+echo ""
+./run_while_tests
+echo ""
+echo ""
+./run_basic_last_sem
+echo ""
+echo ""
+./run_lastsem
+echo ""
+echo ""
+./run_spring18*
+
+ 

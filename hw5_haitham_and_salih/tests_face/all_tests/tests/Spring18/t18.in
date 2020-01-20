@@ -1,0 +1,22 @@
+//nested loops
+void main() {
+	int i = 1;
+	byte j = 1b;
+	
+	while(i < 10) {
+		j = 1b;
+		while (j < 10) {
+			if (i * j - (i * j / 10)*10 == 0)
+				break;
+			int k = 0;
+			while (k < i * j) {
+				print("*");
+				k = k + 1;
+			}
+			
+			j = j + 1b;
+		}
+		
+		i = i + 1;
+	}
+}

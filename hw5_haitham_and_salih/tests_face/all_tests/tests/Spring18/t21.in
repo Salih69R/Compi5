@@ -1,0 +1,18 @@
+//func args
+int foo(int w, byte x, bool c, int y) {
+	printi(w);
+	printi(x);
+	if (c) print("true"); else print("false");
+	printi(y);
+	return 0;
+}
+
+void main() {
+	foo(5,6b,true,10);
+	foo(2b,5b,false,11);
+	byte x = 88b;
+	byte y = 0b;
+	bool z = true;
+	foo(x,y,z,x);
+	foo(x + 23,y - 55b,87 >= x, 123 * x * (y+2));
+}

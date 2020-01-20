@@ -1,0 +1,29 @@
+
+
+void f(bool cond){
+	if(cond){
+		print("boy");
+		f(false);
+	}else{
+		print("girl");
+	}
+	
+}	
+
+bool g(bool gen){
+	if(gen){
+		print("M "); 
+		return true;
+	}
+	else{
+		print("F ");
+		return false;
+	}
+}
+
+
+void main(){
+	print("apple ");
+	f(g(true));
+	f(g(false));
+}

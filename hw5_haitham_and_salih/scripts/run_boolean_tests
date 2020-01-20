@@ -1,0 +1,34 @@
+#!/bin/bash
+echo "-------------------boolean tests-----------------"
+cd ..
+curr_folder=`pwd`
+cd scripts 
+cd ../all_tests/tests/Dean/booleans_tests
+files=(`ls *.in | cut -d '.' -f1`)
+let success=1
+for i in ${files[*]}
+do
+$curr_folder/hw5 < $i.in > $i.ll
+lli $i.ll > $i.selfout
+diff $i.out $i.selfout > $i.diff 
+lines_num=`cat $i.diff | wc -l`
+if [[ $lines_num -gt 0 ]]
+then
+echo $i test failed
+echo "with " $lines_num " lines differene" 
+echo "start of diff"
+cat $i.diff
+echo "end of diff"
+let success=0
+else 
+echo $i test passed!
+rm $i.ll
+rm $i.selfout
+rm $i.diff 
+fi
+done
+
+if [[ $success -eq 1 ]]
+then
+echo "--------------------boolean tests---------SUCCESS"
+fi 

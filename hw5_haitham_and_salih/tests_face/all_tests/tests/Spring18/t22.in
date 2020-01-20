@@ -1,0 +1,13 @@
+int mod(int lhs, int rhs) {
+	rhs = (lhs / rhs) * rhs;
+	return lhs - rhs;
+}
+
+void main() {
+	print("0 mod 10 = ");
+	printi(mod(0,10));
+	print("16 mod 2 = ");
+	printi(mod(16,2));
+	print("17 mod 3 = ");
+	printi(mod(17,3));
+}

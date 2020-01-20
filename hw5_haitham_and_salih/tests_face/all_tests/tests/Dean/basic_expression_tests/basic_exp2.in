@@ -1,0 +1,11 @@
+void main(){
+	printi(1+1);
+	 
+	printi(30-20);
+	 
+	printi(3*5);
+	 
+	printi(50/2);
+	 
+	printi(49/2);
+}

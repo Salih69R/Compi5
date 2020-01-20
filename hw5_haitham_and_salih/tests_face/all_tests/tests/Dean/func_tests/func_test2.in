@@ -1,0 +1,14 @@
+void g(){
+	print("girl");
+}
+
+void f(){
+	print("boy");
+	g();
+}	
+
+
+void main(){
+	print("apple ");
+	f();
+}

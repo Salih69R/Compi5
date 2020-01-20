@@ -1,0 +1,8 @@
+void main()
+{
+	int a1 = 4/2/2/2*2;
+	printi(a1);
+	int a2 = 7/2*3/4*5;
+	print("you are ");
+	printi(a2);
+}

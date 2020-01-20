@@ -1,0 +1,30 @@
+//var, var to var
+void main() {
+	byte a = 5b;
+	byte c = a;
+	a = 6b;
+	printi(a);
+	
+	printi(c);
+	
+	
+	int d = 100;
+	int e = d;
+	d = 105;
+	printi(d);
+	
+	printi(e);
+	
+	
+	bool f = true;
+	bool g = f;
+	f = false;
+	if (f) print("true"); else print("false");
+	if (g) print("true"); else print("false");
+	
+	printi(a);
+	printi(c);
+	printi(d);
+	printi(e);
+	
+}

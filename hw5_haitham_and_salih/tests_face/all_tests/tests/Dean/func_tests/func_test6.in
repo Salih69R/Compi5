@@ -1,0 +1,23 @@
+
+int foo(int x,int y, bool magzim){
+	print("dont be magzim");
+
+	int a=10;
+	int c=100;
+	if(magzim)
+	{
+		return (x*y)*c;//FIX
+		}
+	else{
+		return (x+y)*a; // FIX
+		}
+}
+
+
+void main(){
+	int x = foo(5,3,false);
+	printi(x);
+	int y = foo(50,30,true);
+	printi(y);
+	
+}

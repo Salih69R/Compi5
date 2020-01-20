@@ -1,0 +1,17 @@
+
+int foo(byte c){
+  int x=c;
+  return x+1b;
+}
+
+
+int goo(byte c){
+  int x=c;
+  return c+1b;
+}
+
+
+void main(){
+	printi(foo(255b));
+	printi(goo(255b));
+}

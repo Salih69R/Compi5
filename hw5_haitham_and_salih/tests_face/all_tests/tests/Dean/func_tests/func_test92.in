@@ -1,0 +1,59 @@
+
+
+int a(int x){
+  print("a");
+  return x;
+}
+
+int k(int x){
+  print("b");
+  return x;
+}
+
+int c(int x){
+  print("c");
+  return x;
+}
+
+int d(int x){
+  print("d");
+  return x;
+}
+
+int e(int x){
+  print("e");
+  return x;
+}
+
+int f(int x){
+  print("f");
+  return x;
+}
+
+int g(int x){
+  print("g");
+  return x;
+}
+
+int h(int x){
+  print("h");
+  return x;
+}
+
+int i(int x){
+  print("i");
+  return x;
+}
+
+int j(int x){
+  print("j");
+  return x;
+}
+
+
+
+void main(){
+	int x = 10;
+	int y = (a(x)+ k(x) + c(x) + d(x) + e(x) + f(x) + g(x) + h(x) + (i(x)) + j(x))/j(x);
+	printi(x);
+}

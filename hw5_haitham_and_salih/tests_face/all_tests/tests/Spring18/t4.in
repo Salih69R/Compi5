@@ -1,0 +1,19 @@
+//arithmetic
+void main() {
+	printi(8);
+	
+	printi(100b);
+	
+	printi(1+2+3);
+	
+	printi(120b-50b-1b);
+	
+	printi(10-2*3);
+	
+	printi(10-8);
+	
+	printi(10/2);
+	
+	printi(1+400/3b);
+	
+}
