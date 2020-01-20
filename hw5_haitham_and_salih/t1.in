@@ -1,27 +1,17 @@
-void printByValue(bool val) {
-	if (val)
-		print("val is true");
-	else {
-		print("val is false");
-	}
+bool func5(bool x) {
+	//return x or not x;
+	
+	if(x or not x)
+		return true;
+	else
+		return false;
+	
 }
 
+
 void main() {
-	printByValue(true);
-	printByValue(false);
-
-	if(true)
-    {
-        print("true");
-    }
-
-    if(false or false and  true)
-    {
-        print("true");
-    }
 	
 	
-	int x = 0;
-	int y = 5/x;
+	if (func5(true)) print("true"); else print("false");
     
 }

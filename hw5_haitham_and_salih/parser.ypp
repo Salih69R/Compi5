@@ -925,7 +925,6 @@ Exp :			LPAREN Exp RPAREN
 				| NOT checkBoolExp 															
 						{
 							
-					//CodeBuffer::instance().emit("	\t\t\t NOW IN: NOT BOOLEXP");
 						
 							string my_reg = a.RegAlloc();
 							$$ = new Node(BOOL_t , "" , "",my_reg);
@@ -940,14 +939,13 @@ Exp :			LPAREN Exp RPAREN
 							}
 							
 							//TODO: fix this
-							a.genBool($$,$2->reg);
+							a.genBool($$,$2->reg, true);
 						}
 
 
 				| checkBoolExp AND MAKE_IF_BR M checkBoolExp ANDGEN M MAKE_IF_BR M												
 						{
 						
-					//CodeBuffer::instance().emit("	\t\t\t NOW IN: BOOLEXP AND BOOLEXP");
 							auto last_br = last_br_emit.top();
 							last_br_emit.pop();
 							
