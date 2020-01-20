@@ -982,21 +982,37 @@ Exp :			LPAREN Exp RPAREN
 
 						}
 
-				| checkBoolExp OR checkBoolExp ANDGEN M MAKE_IF_BR M												
+				| checkBoolExp OR MAKE_IF_BR M checkBoolExp ANDGEN M MAKE_IF_BR M												
 						{
 							
 							
 							
+							auto last_br = last_br_emit.top();
+							last_br_emit.pop();
 							
-							pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex>(last_br_emit.top(),FIRST);
-							pair<int,BranchLabelIndex> p2 = pair<int,BranchLabelIndex>(last_br_emit.top(),SECOND);
-							auto l1 =  CodeBuffer::instance().makelist(p);
-							auto l2 =  CodeBuffer::instance().makelist(p2);
+							auto before_last_br = last_br_emit.top();
+							last_br_emit.pop();
+							
+							pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex>(last_br,FIRST);
+							pair<int,BranchLabelIndex> p2 = pair<int,BranchLabelIndex>(last_br,SECOND);
+							auto last_br_true =  CodeBuffer::instance().makelist(p);
+							auto last_br_false =  CodeBuffer::instance().makelist(p2);
+							
+							 p = pair<int,BranchLabelIndex>(before_last_br,FIRST);
+							 p2 = pair<int,BranchLabelIndex>(before_last_br,SECOND);
+							auto before_last_br_true =  CodeBuffer::instance().makelist(p);
+							auto before_last_br_false =  CodeBuffer::instance().makelist(p2);
+							
+							
+							//frist if br
 						
-								
-							CodeBuffer::instance().bpatch($1->falselist,$5->reg);
-							CodeBuffer::instance().bpatch($4->nextlist,$5->reg);
-							CodeBuffer::instance().bpatch(l2,$7->reg);
+							CodeBuffer::instance().bpatch(before_last_br_false,$4->reg);
+							
+							
+							
+							CodeBuffer::instance().bpatch($1->falselist,$7->reg);
+							CodeBuffer::instance().bpatch($6->nextlist,$7->reg);
+							CodeBuffer::instance().bpatch(last_br_false,$9->reg);
 							
 							
 							$$ = new Node(BOOL_t , "" ,"",a.RegAlloc());
@@ -1011,12 +1027,14 @@ Exp :			LPAREN Exp RPAREN
 							a.genBool($$,$1->reg);
 							
 							
-							$$->truelist = CodeBuffer::instance().merge($1->truelist,$3->truelist);
-							$$->truelist = CodeBuffer::instance().merge($$->truelist,l1);
-							$$->falselist = $3->falselist;
-							$$->nextlist = $3->nextlist;
+							$$->truelist = CodeBuffer::instance().merge($1->truelist,$5->truelist);
+							$$->truelist = CodeBuffer::instance().merge($$->truelist,last_br_true); 
+							$$->truelist = CodeBuffer::instance().merge($$->truelist,before_last_br_true);
+							$$->falselist = $5->falselist;
+							$$->nextlist = $5->nextlist;
 						
-							last_br_emit.pop();
+							
+							
 							
 
 						}

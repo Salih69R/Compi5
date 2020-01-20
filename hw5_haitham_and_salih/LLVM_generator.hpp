@@ -5,7 +5,7 @@
 #include <set>
 #include <stdbool.h>
 #include "structs.hpp"
-#define REG_NUM 500
+#define REG_NUM 3000
 using namespace std;
 
 
@@ -364,6 +364,8 @@ public:
 			}			
 		}
 		
+		
+		//CodeBuffer::instance().emit("		ret type for "+ TokenTypeToLlvmType(fun_retype));
 		if( fun_retype == VOID_t)
 			
 			CodeBuffer::instance().emit("	call " + TokenTypeToLlvmType(fun_retype) + " @" + fun_id + "(" + print_args(params,args) + ")");
@@ -584,10 +586,12 @@ public:
 	
 	void CheckDivZero(Node* mkam){
 		
-		string val_reg = mkam->reg;
+		string val_reg = RegAlloc();
 		if(mkam->is_Var){
-			val_reg = RegAlloc();
+			
 			CodeBuffer::instance().emit("	" + val_reg + " = load i32 , " + TokenTypeToLlvmType(mkam->type) + "* " + mkam->reg);
+		}else{
+			CodeBuffer::instance().emit("	" + val_reg + " = add " + TokenTypeToLlvmType(mkam->type) + " 0 , " + mkam->value);
 		}
 		
 		//Error division by zero
