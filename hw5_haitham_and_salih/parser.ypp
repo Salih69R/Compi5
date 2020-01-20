@@ -925,6 +925,7 @@ Exp :			LPAREN Exp RPAREN
 				| NOT checkBoolExp 															
 						{
 							
+					//CodeBuffer::instance().emit("	\t\t\t NOW IN: NOT BOOLEXP");
 						
 							string my_reg = a.RegAlloc();
 							$$ = new Node(BOOL_t , "" , "",my_reg);
@@ -943,21 +944,36 @@ Exp :			LPAREN Exp RPAREN
 						}
 
 
-				| checkBoolExp AND checkBoolExp ANDGEN M MAKE_IF_BR M												
+				| checkBoolExp AND MAKE_IF_BR M checkBoolExp ANDGEN M MAKE_IF_BR M												
 						{
 						
+					//CodeBuffer::instance().emit("	\t\t\t NOW IN: BOOLEXP AND BOOLEXP");
+							auto last_br = last_br_emit.top();
+							last_br_emit.pop();
 							
+							auto before_last_br = last_br_emit.top();
+							last_br_emit.pop();
 							
+							pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex>(last_br,FIRST);
+							pair<int,BranchLabelIndex> p2 = pair<int,BranchLabelIndex>(last_br,SECOND);
+							auto last_br_true =  CodeBuffer::instance().makelist(p);
+							auto last_br_false =  CodeBuffer::instance().makelist(p2);
 							
-							pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex>(last_br_emit.top(),FIRST);
-							pair<int,BranchLabelIndex> p2 = pair<int,BranchLabelIndex>(last_br_emit.top(),SECOND);
-							auto l1 =  CodeBuffer::instance().makelist(p);
-							auto l2 =  CodeBuffer::instance().makelist(p2);
-						
+							p = pair<int,BranchLabelIndex>(before_last_br,FIRST);
+							p2 = pair<int,BranchLabelIndex>(before_last_br,SECOND);
+							auto before_last_br_true =  CodeBuffer::instance().makelist(p);
+							auto before_last_br_false =  CodeBuffer::instance().makelist(p2);
 								
-							CodeBuffer::instance().bpatch($1->truelist,$5->reg);
-							CodeBuffer::instance().bpatch($4->nextlist,$5->reg);
-							CodeBuffer::instance().bpatch(l1,$7->reg);
+								
+								
+							//frist if br
+						
+							CodeBuffer::instance().bpatch(before_last_br_true,$4->reg);							
+
+							
+							CodeBuffer::instance().bpatch($1->truelist,$7->reg);
+							CodeBuffer::instance().bpatch($6->nextlist,$7->reg);
+							CodeBuffer::instance().bpatch(last_br_true,$9->reg);
 							
 							
 							$$ = new Node(BOOL_t , "" ,"",a.RegAlloc());
@@ -972,12 +988,13 @@ Exp :			LPAREN Exp RPAREN
 							a.genBool($$,$1->reg);
 							
 							
-							$$->falselist = CodeBuffer::instance().merge($1->falselist,$3->falselist);
-							$$->falselist = CodeBuffer::instance().merge($$->falselist,l2);
-							$$->truelist = $3->truelist;
-							$$->nextlist = $3->nextlist;
+							$$->falselist = CodeBuffer::instance().merge($1->falselist,$5->falselist);
+							$$->falselist = CodeBuffer::instance().merge($$->falselist,last_br_false);
+							$$->falselist = CodeBuffer::instance().merge($$->falselist,before_last_br_false);
+							$$->truelist = $5->truelist;
+							$$->nextlist = $5->nextlist;
 						
-							last_br_emit.pop();
+							
 							
 
 						}

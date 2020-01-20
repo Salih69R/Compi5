@@ -307,16 +307,20 @@ public:
 		string ret_reg,tmp_reg, load_str, line , arr_size_inpxels;//helper strings
 		
 		if (reg_args.size() == 0){
-			
-			
-			tmp_reg = RegAlloc();
-			
-			CodeBuffer::instance().emit("	" + tmp_reg + " = call " + TokenTypeToLlvmType(fun_retype) + " @" + fun_id + "( )");
-			ret_reg = RegAlloc();
-			CodeBuffer::instance().emit("	"+ret_reg + " = alloca " + TokenTypeToLlvmType(fun_retype));
-			CodeBuffer::instance().emit("	store " + TokenTypeToLlvmType(fun_retype)+" " + tmp_reg +" , "+TokenTypeToLlvmType(fun_retype)+"* " + ret_reg);
-			return ret_reg;
-			
+				
+			if( fun_retype == VOID_t){
+				CodeBuffer::instance().emit("	call " + TokenTypeToLlvmType(fun_retype) + " @" + fun_id + "( )");
+				return "";
+			}
+			else{
+				tmp_reg = RegAlloc();
+				
+				CodeBuffer::instance().emit("	" + tmp_reg + " = call " + TokenTypeToLlvmType(fun_retype) + " @" + fun_id + "( )");
+				ret_reg = RegAlloc();
+				CodeBuffer::instance().emit("	"+ret_reg + " = alloca " + TokenTypeToLlvmType(fun_retype));
+				CodeBuffer::instance().emit("	store " + TokenTypeToLlvmType(fun_retype)+" " + tmp_reg +" , "+TokenTypeToLlvmType(fun_retype)+"* " + ret_reg);
+				return ret_reg;
+			}
 		}
 		
 		
@@ -367,7 +371,6 @@ public:
 		
 		//CodeBuffer::instance().emit("		ret type for "+ TokenTypeToLlvmType(fun_retype));
 		if( fun_retype == VOID_t)
-			
 			CodeBuffer::instance().emit("	call " + TokenTypeToLlvmType(fun_retype) + " @" + fun_id + "(" + print_args(params,args) + ")");
 		else{
 			tmp_reg = RegAlloc();
