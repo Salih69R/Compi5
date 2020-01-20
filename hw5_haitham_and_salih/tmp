@@ -26,7 +26,7 @@ func5:
 	%1 = alloca i1
 	store i1 %0 , i1* %1
 	%2 = load i1, i1* %1
-	br i1 %2 , label %label_44, label %label_29
+	br i1 %2 , label @, label %label_29
 label_29:
 	%3 = alloca i1
 	%4 = load i1 , i1* %1
@@ -35,22 +35,13 @@ label_29:
 	br label %label_35
 label_35:
 	%6 = load i1, i1* %3
-	br i1 %6 , label %label_44, label %label_38
+	br i1 %6 , label @, label %label_38
 label_38:
 	%7 = alloca i1
 	%8 = load i1 , i1* %1
 	store i1 %8 , i1* %7
-	%9 = load i1, i1* %7
-	br i1 %9 , label %label_44, label %label_48
-label_44:
-	%10 = add i1 0 , 1
-	ret i1 true
-	br label %label_52
-label_48:
-	%12 = add i1 0 , 0
-	ret i1 false
-	br label %label_52
-label_52:
+	%9 = load i1 , i1* %7
+	ret i1 %9
 }
 define void @main() {
 main:
@@ -60,19 +51,19 @@ main:
 	%2 = alloca i1
 	store i1 %1 , i1* %2
 	%3 = load i1, i1* %2
-	br i1 %3 , label %label_63, label %label_69
-label_63:
+	br i1 %3 , label %label_54, label %label_60
+label_54:
 	%4 = alloca [6 x i8]
 	store [6 x i8] c"true\0A\00" , [6 x i8]* %4
 	%5 = getelementptr [6 x i8] , [6 x i8]* %4, i64 0, i64 0
 	call void @print(i8* %5)
-	br label %label_75
-label_69:
+	br label %label_66
+label_60:
 	%6 = alloca [7 x i8]
 	store [7 x i8] c"false\0A\00" , [7 x i8]* %6
 	%7 = getelementptr [7 x i8] , [7 x i8]* %6, i64 0, i64 0
 	call void @print(i8* %7)
-	br label %label_75
-label_75:
+	br label %label_66
+label_66:
 	ret void
 }

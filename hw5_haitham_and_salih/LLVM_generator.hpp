@@ -396,7 +396,10 @@ public:
 		if (fun_ret_type == VOID_t){
 			CodeBuffer::instance().emit("	ret void");
 			
-		}else if (val->is_Var){
+		} else if(val == nullptr){
+			
+			CodeBuffer::instance().emit("	ret " + TokenTypeToLlvmType(fun_ret_type) + " 0");//return default val
+		} else if (val->is_Var){
 				if (val->type == FUNCTION_t){
 					val->reg = RegAlloc();
 				}

@@ -1,6 +1,14 @@
 
 bool func5(bool x) {
-	return x or not x;
+
+
+//	return x or not x;
+	if(x or not x)
+		return true;
+	else 
+		return false;
+
+
 }
 
 void main() {
