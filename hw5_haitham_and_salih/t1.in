@@ -2,11 +2,11 @@
 bool func5(bool x) {
 
 
-//	return x or not x;
-	if(x or not x)
-		return true;
-	else 
-		return false;
+	return x and 4 > 0;
+//	if(x or not x)
+//		return true;
+//	else 
+//		return false;
 
 
 }
