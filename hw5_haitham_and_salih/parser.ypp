@@ -332,6 +332,16 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							}
 							
 							
+							
+							//TODO: if type == BOOL_t backp truelist to true and falselist to false, check if it's a function call also
+							if($1->type == BOOL_t){
+								
+
+
+							}							
+							
+							
+							
 							var = new Variable($1->type,$2->name);
 							var->falselist = $4->falselist;
 							var->truelist = $4->truelist;
@@ -428,6 +438,10 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 									exit(0);
 								}
 							}
+							
+							//TODO: if type == BOOL_t backp truelist to true and falselist to false, check if it's a function call also
+							
+							
 								var->value = $3->value;
 								var->falselist = $3->falselist;
 								var->nextlist = $3->nextlist;
@@ -476,7 +490,11 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							$$ = new Node(UNDEFYET_t);
 						}
 				| RETURN Exp SC 													
-						{//cout << "return1" << endl;
+						{ 
+						
+							//TODO: if type == BOOL_t backp truelist to true and falselist to false
+							
+							
 							auto& scope = symbolTable.scopes_table[symbolTable.scopes_table.size()-1 < 0 ? 0 : symbolTable.scopes_table.size()-1];
 							assert(scope.curFunc != nullptr);//grammar makes sure
 							auto f = scope.curFunc;
@@ -728,9 +746,20 @@ Call :			ID LPAREN {ParamListStack.push(vector<Node*>()); } ExpList RPAREN
 						};
 
 ExpList :		Exp 														
-						{ParamListStack.top().push_back($1);}
+						{
+							
+							//TODO: if type == BOOL_t backp truelist to true and falselist to false, check if it's a function call also
+							ParamListStack.top().push_back($1);
+						
+						}
 				| Exp COMMA ExpList 												
-						{ParamListStack.top().push_back($1);};
+						{
+						
+							
+							//TODO: if type == BOOL_t backp truelist to true and falselist to false, check if it's a function call also
+							ParamListStack.top().push_back($1);
+						
+						};
 
 Type :			INT 															
 						{
@@ -1190,6 +1219,11 @@ OPENLOOP:					{
 CLOSE:						{
 								symbolTable.closeScope();
 								return_flag.pop();
+								
+								//and now we "re-init" the flag after an scope was closed
+								return_flag.pop();
+								return_flag.push(true);
+								
 							};
 
 
