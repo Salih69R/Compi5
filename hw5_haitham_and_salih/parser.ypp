@@ -953,7 +953,7 @@ Exp :			LPAREN Exp RPAREN
 							}
 							
 							//TODO: fix this
-							a.genBool($$,$2->reg, true);
+							a.genBool($$,$2, true);
 						}
 
 
@@ -994,7 +994,7 @@ Exp :			LPAREN Exp RPAREN
 							}
 							
 							//TODO: fix this
-							a.genBool($$,$5->reg);
+							a.genBool($$,$5);
 							
 							
 							$$->falselist = CodeBuffer::instance().merge($1->falselist,$5->falselist);
@@ -1041,7 +1041,7 @@ Exp :			LPAREN Exp RPAREN
 							}
 							
 							//TODO: fix this
-							a.genBool($$,$5->reg);
+							a.genBool($$,$5);
 						//	CodeBuffer::instance().emit("r2->reg is " + $5->reg);
 							
 							

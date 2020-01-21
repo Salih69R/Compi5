@@ -611,20 +611,25 @@ public:
 	
 	
 	//use this function only if you know the result (true or false) and it is saved in boolExp->val already as string
-	void genBool(Node* boolExp,string r2 = "", bool isNot = false){
+	void genBool(Node* boolExp,Node* r2 = nullptr, bool isNot = false){
 		if(boolExp->is_Var){
 			CodeBuffer::instance().emit("	" + boolExp->reg + " = alloca i1" );
 			string tmp_reg;
 			
 			if(isNot){
 				string oldReg = RegAlloc();
-				CodeBuffer::instance().emit("	"+oldReg + " = load i1 , i1* " + r2 );
+				CodeBuffer::instance().emit("	"+oldReg + " = load i1 , i1* " + r2->reg );
 				tmp_reg = RegAlloc();
 				CodeBuffer::instance().emit("	"+tmp_reg + " = add i1 1 , " + oldReg );
 				
 			}else{
+				if(r2->is_Var){
 				tmp_reg = RegAlloc();
-				CodeBuffer::instance().emit("	"+tmp_reg + " = load i1 , i1* " + r2 );
+				CodeBuffer::instance().emit("	"+tmp_reg + " = load i1 , i1* " + r2->reg );
+				}else{
+					tmp_reg = r2->value;
+					
+				}
 			}
 			
 				
