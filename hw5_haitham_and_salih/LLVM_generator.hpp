@@ -629,6 +629,7 @@ public:
 			
 				
 			CodeBuffer::instance().emit("	store i1 " + tmp_reg + " , i1* " + boolExp->reg );
+			//CodeBuffer::instance().emit("hiiiiiiiiiiiiiiiii");
 			
 			
 			

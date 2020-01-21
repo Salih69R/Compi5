@@ -691,6 +691,7 @@ Call :			ID LPAREN {ParamListStack.push(vector<Node*>()); } ExpList RPAREN
 							
 							callee->reg = a.genCall(callee->name,callee->returnType,callee->paramTypes,args);
 							//$$ = callee;
+							//CodeBuffer::instance().emit("callee->name " + callee->name + " , calle reg " + callee->reg);
 							$$ = new Node(callee->returnType , "" , "" , callee->reg);
 							$$->is_Var = true;
 							
@@ -878,7 +879,7 @@ Exp :			LPAREN Exp RPAREN
 						
 						
 						Function* callee = (Function*)$1;
-						
+						$$ = $1;
 						
 						
 						//a.Var_Alloc_And_Assign($$->reg,callee->returnType,callee,&args);
@@ -981,23 +982,23 @@ Exp :			LPAREN Exp RPAREN
 							CodeBuffer::instance().bpatch($1->truelist,$4->reg);
 							CodeBuffer::instance().bpatch($6->nextlist,$7->reg);
 							CodeBuffer::instance().bpatch(last_br_true,$4->reg);
-							CodeBuffer::instance().bpatch(last_br_false,$7->reg);
+							//CodeBuffer::instance().bpatch(last_br_false,$7->reg);
 							
 							
 							$$ = new Node(BOOL_t , "" ,"",a.RegAlloc());
-							$$->is_Var = $1->is_Var;
+							$$->is_Var = true;
 							
-							if (!($1->is_Var)){
-								$$->value = $1->value;
+							if (!($5->is_Var)){
+								$$->value = $5->value;
 								
 							}
 							
 							//TODO: fix this
-							a.genBool($$,$1->reg);
+							a.genBool($$,$5->reg);
 							
 							
 							$$->falselist = CodeBuffer::instance().merge($1->falselist,$5->falselist);
-						//	$$->falselist = CodeBuffer::instance().merge($$->falselist,last_br_false);
+							$$->falselist = CodeBuffer::instance().merge($$->falselist,last_br_false);
 							
 							$$->truelist = $5->truelist;
 							$$->nextlist = $5->nextlist;
@@ -1024,7 +1025,7 @@ Exp :			LPAREN Exp RPAREN
 					
 							
 							CodeBuffer::instance().bpatch($1->falselist,$4->reg);
-							CodeBuffer::instance().bpatch(last_br_true,$7->reg);
+							//CodeBuffer::instance().bpatch(last_br_true,$7->reg);
 							
 							CodeBuffer::instance().bpatch($6->nextlist,$7->reg);
 							CodeBuffer::instance().bpatch(last_br_false,$4->reg);
@@ -1032,19 +1033,20 @@ Exp :			LPAREN Exp RPAREN
 							
 							
 							$$ = new Node(BOOL_t , "" ,"",a.RegAlloc());
-							$$->is_Var = $1->is_Var;
+							$$->is_Var = true;
 							
-							if (!($1->is_Var)){
-								$$->value = $1->value;
+							if (!($5->is_Var)){
+								$$->value = $5->value;
 								
 							}
 							
 							//TODO: fix this
-							a.genBool($$,$1->reg);
+							a.genBool($$,$5->reg);
+						//	CodeBuffer::instance().emit("r2->reg is " + $5->reg);
 							
 							
 							$$->truelist = CodeBuffer::instance().merge($1->truelist,$5->truelist);
-						//	$$->truelist = CodeBuffer::instance().merge($$->truelist,last_br_true); 
+							$$->truelist = CodeBuffer::instance().merge($$->truelist,last_br_true); 
 							
 							$$->falselist = $5->falselist;
 							$$->nextlist = $5->nextlist;
