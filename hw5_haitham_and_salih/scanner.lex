@@ -8,6 +8,8 @@
     using namespace std;
 	using namespace output;
 	
+	extern int if_counter;
+	
 
 	
 	
@@ -57,12 +59,14 @@ return											{
 													return RETURN;
 												}
 if												{
+													if_counter++;
 													return IF;
 												}
 else											{
 													return ELSE;
 												}
 while											{
+													if_counter++;
 													return WHILE;
 												}
 break											{

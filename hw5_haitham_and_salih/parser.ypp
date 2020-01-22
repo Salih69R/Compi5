@@ -22,6 +22,7 @@
 	vector<Node*> args = vector<Node*>(); // this is for call
 	stack<bool> return_flag;
 	bool return_flag_value;
+	int if_counter = 0;
 	
 	
 		//these are for if, and loops and shit like that
@@ -67,6 +68,7 @@ Funcs :			/*epsilon*/
 FuncDecl :		RetType ID  {
 							return_flag = stack<bool>();
 							return_flag.push(true); 
+							if_counter = 0;
 							
 							Variable* var = symbolTable.getVar($2->name);
 							Variable* var_as_class = symbolTable.getVar("enum "+$2->name);
@@ -533,7 +535,7 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 						{
 						
 						//return_flag.pop();
-					
+						if_counter--;
 						//{return_flag.push(true);}
 						
 						//ask saleh
@@ -567,6 +569,7 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 						
 						//ask saleh
 							$$ = new Node(UNDEFYET_t);
+						if_counter--;
 						pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex>(last_br_emit.top(),FIRST);
 						pair<int,BranchLabelIndex> p2 = pair<int,BranchLabelIndex>(last_br_emit.top(),SECOND);
 						$3->truelist =  CodeBuffer::instance().merge($3->truelist , CodeBuffer::instance().makelist(p));
@@ -603,6 +606,7 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 					
 					//TODO ask salih for this
 					$$ = new Node(UNDEFYET_t);
+					if_counter--;
 					pair<int,BranchLabelIndex> p_while = pair<int,BranchLabelIndex>(last_while_emit.top(),FIRST);
 					
 					
@@ -1021,8 +1025,10 @@ Exp :			LPAREN Exp RPAREN
 							CodeBuffer::instance().bpatch($1->truelist,$4->reg);
 							CodeBuffer::instance().bpatch($6->nextlist,$7->reg);
 							CodeBuffer::instance().bpatch(last_br_true,$4->reg);
-							//CodeBuffer::instance().bpatch(last_br_false,$7->reg);
 							
+							if(if_counter == 0){
+								CodeBuffer::instance().bpatch(last_br_false,$7->reg);
+							}
 							
 							$$ = new Node(BOOL_t , "" ,"",a.RegAlloc());
 							$$->is_Var = true;
@@ -1037,7 +1043,10 @@ Exp :			LPAREN Exp RPAREN
 							
 							
 							$$->falselist = CodeBuffer::instance().merge($1->falselist,$5->falselist);
-							$$->falselist = CodeBuffer::instance().merge($$->falselist,last_br_false);
+							
+							if(if_counter != 0 ){
+								$$->falselist = CodeBuffer::instance().merge($$->falselist,last_br_false);
+							}
 							
 							$$->truelist = $5->truelist;
 							//$$->nextlist = $5->nextlist;
@@ -1064,8 +1073,10 @@ Exp :			LPAREN Exp RPAREN
 					
 							
 							CodeBuffer::instance().bpatch($1->falselist,$4->reg);
-							//CodeBuffer::instance().bpatch(last_br_true,$7->reg);
 							
+							if (if_counter == 0){
+								CodeBuffer::instance().bpatch(last_br_true,$7->reg);
+							}
 							CodeBuffer::instance().bpatch($6->nextlist,$7->reg);
 							CodeBuffer::instance().bpatch(last_br_false,$4->reg);
 	
@@ -1085,8 +1096,10 @@ Exp :			LPAREN Exp RPAREN
 							
 							
 							$$->truelist = CodeBuffer::instance().merge($1->truelist,$5->truelist);
-							$$->truelist = CodeBuffer::instance().merge($$->truelist,last_br_true); 
 							
+							if (if_counter != 0){
+							$$->truelist = CodeBuffer::instance().merge($$->truelist,last_br_true); 
+							}
 							$$->falselist = $5->falselist;
 							//$$->nextlist = $5->nextlist;
 						
