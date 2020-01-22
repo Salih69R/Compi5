@@ -232,20 +232,24 @@ Enumerator :		ID
 Statements :	Statement 													
 						{
 							
+							$$ = new Node(UNDEFYET_t);	
 							$$->nextlist = $1->nextlist;
-							//cout << "4" << endl;
+							//$$->breaklist = $1->breaklist;
+							//$$->continuelist = $1->continuelist;
 						}
-				| Statements  Statement 												
+				| Statements M2 Statement 												
 						{	
-							//cout << "1" << endl;
-							$$->nextlist = $2->nextlist;
-							//cout << "2" << endl;
-							//cout << "2222222222222222222222222222222222222222222" << endl;
+							CodeBuffer::instance().bpatch($1->nextlist,$2->reg);
+							$$ = new Node(UNDEFYET_t);
+							$$->nextlist = $3->nextlist;
+							//$$->breaklist = merge($1->breaklist, $3->breaklist);
+							//$$->continuelist = merge($1->continuelist, $3->continuelist);
+							
 						};
 
 Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 						{
-							$$->nextlist = $3->nextlist;
+							$$ = $3;
 						}
 				| Type ID SC 														
 
@@ -955,6 +959,8 @@ Exp :			LPAREN Exp RPAREN
 							$$ = new Node(BOOL_t,"","true", a.RegAlloc());
 							//$$->is_Var = true;
 							a.genBool($$);
+							//int addr = CodeBuffer::instance().emit("br label @");
+							//$$->truelist = CodeBuffer::instance().makelist({addr, FIRST});
 						
 						}
 
@@ -963,6 +969,8 @@ Exp :			LPAREN Exp RPAREN
 							$$ = new Node(BOOL_t,"","false", a.RegAlloc());
 							//$$->is_Var = true;
 							a.genBool($$);
+							//int addr = CodeBuffer::instance().emit("br label @");
+							//$$->falselist = CodeBuffer::instance().makelist({addr, FIRST});
 						}
 						
 				| NOT checkBoolExp 															
@@ -971,6 +979,8 @@ Exp :			LPAREN Exp RPAREN
 						
 							string my_reg = a.RegAlloc();
 							$$ = new Node(BOOL_t , "" , "",my_reg);
+							
+							
 							$$->is_Var = $2->is_Var;//check this $2->is_Var;
 							
 							if (!($2->is_Var)){
@@ -1030,7 +1040,7 @@ Exp :			LPAREN Exp RPAREN
 							$$->falselist = CodeBuffer::instance().merge($$->falselist,last_br_false);
 							
 							$$->truelist = $5->truelist;
-							$$->nextlist = $5->nextlist;
+							//$$->nextlist = $5->nextlist;
 						
 							
 							
@@ -1078,7 +1088,7 @@ Exp :			LPAREN Exp RPAREN
 							$$->truelist = CodeBuffer::instance().merge($$->truelist,last_br_true); 
 							
 							$$->falselist = $5->falselist;
-							$$->nextlist = $5->nextlist;
+							//$$->nextlist = $5->nextlist;
 						
 							
 							
@@ -1239,7 +1249,15 @@ MAKE_WHILE:				{
 MAKE_IF_BR:				{
 							last_br_emit.push( a.genIF(last_bool_exp) );
 						}
-			
+M2: {
+		int addr = CodeBuffer::instance().emit("br label @");
+		string label = CodeBuffer::instance().genLabel();
+		CodeBuffer::instance().bpatch(CodeBuffer::instance().makelist({addr,FIRST}),label);
+		$$ = new Node(UNDEFYET_t);
+		$$->reg = label;
+}
+
+		
 M:      				{
 							$$ = new Node( UNDEFYET_t,"" ,"",   CodeBuffer::instance().genLabel());//saves the label in reg
 						}

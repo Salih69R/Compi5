@@ -1,0 +1,76 @@
+
+@.int_specifier = constant [4 x i8] c"%d\0A\00"
+@.str_specifier = constant [4 x i8] c"%s\0A\00"
+@.str0 = constant [23 x i8] c"Error division by zero\00"
+@.str1 = constant [5 x i8] c"true\00"
+@.str2 = constant [6 x i8] c"false\00"
+
+declare i32 @printf(i8*, ...)
+declare void @exit(i32)
+
+define void @printi(i32) {
+call i32 (i8*, ...) @printf(i8* getelementptr ([4 x i8], [4 x i8]* @.int_specifier, i32 0, i32 0), i32 %0)
+ret void
+}
+
+define void @print(i8*) {
+call i32 (i8*, ...) @printf(i8* getelementptr ([4 x i8], [4 x i8]* @.str_specifier, i32 0, i32 0), i8* %0)
+ret void
+}
+
+define i32 @func5(i32) {
+label_15:
+%func5VariablesStack = alloca [50 x i32]
+%func5ArgumentsStack = alloca [1 x i32]
+%var1 = getelementptr [1 x i32], [1 x i32]* %func5ArgumentsStack, i32 0, i32 0
+store i32 %0, i32* %var1
+%var2 = getelementptr [1 x i32], [1 x i32]* %func5ArgumentsStack, i32 0, i32 0
+%var3 = load i32, i32* %var2
+%var4 = icmp eq i32 %var3, 1
+br i1 %var4, label %label_30, label %label_25
+br label %label_25
+label_25:
+%var5 = getelementptr [1 x i32], [1 x i32]* %func5ArgumentsStack, i32 0, i32 0
+%var6 = load i32, i32* %var5
+%var7 = icmp eq i32 %var6, 1
+br i1 %var7, label %label_32, label %label_30
+label_30:
+br label %label_34
+label_32:
+br label %label_34
+label_34:
+%var8 = phi i1 [ 0, %label_32 ], [ 1, %label_30 ]
+%var9 = zext i1 %var8 to i32
+ret i32 %var9
+br label %label_39
+label_39:
+ret i32 0
+}
+
+define void @main() {
+label_44:
+%mainVariablesStack = alloca [50 x i32]
+br label %label_47
+label_47:
+br label %label_51
+label_49:
+br label %label_51
+label_51:
+%var1 = phi i1 [ 0, %label_49 ], [ 1, %label_47 ]
+%var2 = zext i1 %var1 to i32
+%var3 = call i32 @func5(i32 %var2)
+%var4 = icmp eq i32 %var3, 1
+br i1 %var4, label %label_58, label %label_63
+br label %label_58
+label_58:
+%var5 = getelementptr [5 x i8], [5 x i8]* @.str1, i32 0, i32 0
+call void @print(i8* %var5)
+br label %label_67
+br label %label_63
+label_63:
+%var6 = getelementptr [6 x i8], [6 x i8]* @.str2, i32 0, i32 0
+call void @print(i8* %var6)
+br label %label_67
+label_67:
+ret void
+}
