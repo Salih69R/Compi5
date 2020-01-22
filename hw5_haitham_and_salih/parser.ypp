@@ -44,7 +44,7 @@
 %left OR
 %left AND
 %left EQUALOP
-%left RELATIONOP
+%nonassoc RELATIONOP
 %left ADDOPS
 %left MULTOPS
 %right LPAREN RPAREN
@@ -236,16 +236,16 @@ Statements :	Statement
 							
 							$$ = new Node(UNDEFYET_t);	
 							$$->nextlist = $1->nextlist;
-							//$$->breaklist = $1->breaklist;
-							//$$->continuelist = $1->continuelist;
+							$$->breaklist = $1->breaklist;
+							$$->continuelist = $1->continuelist;
 						}
 				| Statements M2 Statement 												
 						{	
 							CodeBuffer::instance().bpatch($1->nextlist,$2->reg);
 							$$ = new Node(UNDEFYET_t);
 							$$->nextlist = $3->nextlist;
-							//$$->breaklist = merge($1->breaklist, $3->breaklist);
-							//$$->continuelist = merge($1->continuelist, $3->continuelist);
+							$$->breaklist = CodeBuffer::instance().merge($1->breaklist, $3->breaklist);
+							$$->continuelist = CodeBuffer::instance().merge($1->continuelist, $3->continuelist);
 							
 						};
 
@@ -271,6 +271,8 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							var->reg = a.Var_Alloc(var->type);
 							symbolTable.insertVar(var);
 							
+							var->reg = a.Var_Alloc(var->type);
+							CodeBuffer::instance().emit("	store " + TokenTypeToLlvmType(var->type)+" 0 , " + TokenTypeToLlvmType(var->type) + "* " + var->reg);
 
 							delete $1;
 							delete $2;
@@ -295,6 +297,9 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							
 							symbolTable.insertVar(var);
 							var->reg = a.Var_Alloc();
+							
+							CodeBuffer::instance().emit("	store i32 0 , i32* " + var->reg);
+
 
 							delete $2;
 						//ask saleh
@@ -549,7 +554,8 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 						
 						//-------
 						$$->nextlist = CodeBuffer::instance().merge($8->nextlist , $3->falselist);
-						
+						$$->breaklist = $8->breaklist;
+						$$->continuelist = $8->continuelist;
 						
 						int i = CodeBuffer::instance().emit("	br label @");
 						string DoneL =  CodeBuffer::instance().genLabel();
@@ -583,6 +589,9 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 						
 						$$->nextlist = CodeBuffer::instance().merge($8->nextlist , $14->nextlist);//after done from true body, and false body
 						$$->nextlist = CodeBuffer::instance().merge($$->nextlist , CodeBuffer::instance().makelist(last_MELSE.top()));//add to it the nextlist of MELSE
+						
+						$$->breaklist = CodeBuffer::instance().merge($8->breaklist, $14->breaklist);
+						$$->continuelist = CodeBuffer::instance().merge($8->continuelist, $14->continuelist);	
 						
 						
 						int i = CodeBuffer::instance().emit("	br label @");//doneLabel after the else body
@@ -674,7 +683,7 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							a.RegAlloc();//something about labels ,, llvm sucks
 							pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex> ( i, FIRST);
 							Break_labels.top().push_back(p);
-				
+							$$->breaklist = CodeBuffer::instance().makelist(p);
 							
 						}
 				| CONTINUE SC 														
@@ -691,7 +700,27 @@ Statement :		LBRACE OPENORMAL Statements RBRACE CLOSE
 							a.RegAlloc();//something about labels ,, llvm sucks
 							pair<int,BranchLabelIndex> p = pair<int,BranchLabelIndex> ( i, FIRST);
 							Cont_labels.top().push_back(p);
+							$$->continuelist = CodeBuffer::instance().makelist(p);
 						};
+
+checkBoolExp :     Exp {
+						TokenType old1 = $1->type;
+						if($1->type == FUNCTION_t)
+							$1->type = ((Function*) $1)->returnType;
+
+						
+						if($1->type != BOOL_t)
+						{
+							errorMismatch(yylineno);
+							exit(0);
+						}
+						
+						$1->type = old1;
+						last_bool_exp = $1;
+						$$ = $1;
+
+					};
+
 
 Call :			ID LPAREN {ParamListStack.push(vector<Node*>()); } ExpList RPAREN 										
 						{
@@ -977,9 +1006,9 @@ Exp :			LPAREN Exp RPAREN
 							//$$->falselist = CodeBuffer::instance().makelist({addr, FIRST});
 						}
 						
-				| NOT checkBoolExp 															
+				| NOT Exp 															
 						{
-							
+							last_bool_exp = $2;
 						
 							string my_reg = a.RegAlloc();
 							$$ = new Node(BOOL_t , "" , "",my_reg);
@@ -1000,8 +1029,13 @@ Exp :			LPAREN Exp RPAREN
 						}
 
 
-				| checkBoolExp AND MAKE_IF_BR M checkBoolExp ANDGEN M 												
+				| Exp   AND MAKE_IF_BR M Exp ANDGEN M 												
 						{
+						
+						last_bool_exp = $5;
+						
+						
+						
 						
 							auto last_br = last_br_emit.top();
 							last_br_emit.pop();
@@ -1014,8 +1048,6 @@ Exp :			LPAREN Exp RPAREN
 							auto last_br_false =  CodeBuffer::instance().makelist(p2);
 							
 							
-								
-								
 								
 							//frist if br
 						
@@ -1042,14 +1074,14 @@ Exp :			LPAREN Exp RPAREN
 							
 							$$->falselist = CodeBuffer::instance().merge($1->falselist,$5->falselist);
 							
-							if(if_counter != 0 ){
+							//if(if_counter != 0 ){
 								$$->falselist = CodeBuffer::instance().merge($$->falselist,last_br_false);
-							}
+							//}
 							
 							$$->truelist = $5->truelist;
 							//$$->nextlist = $5->nextlist;
 						
-								if(if_counter == 0){
+							//	if(if_counter == 0){
 							
 							
 								string tL, fL;
@@ -1066,16 +1098,16 @@ Exp :			LPAREN Exp RPAREN
 								CodeBuffer::instance().bpatch(last_br_false,fL);
 								CodeBuffer::instance().bpatch(last_br_false,fL);
 								CodeBuffer::instance().bpatch(last_br_false,fL);
-							}
+							//}
 						
 							
 
 						}
 
-				| checkBoolExp OR MAKE_IF_BR M checkBoolExp ANDGEN M 												
+				| Exp  OR MAKE_IF_BR M Exp ANDGEN M 												
 						{
 							
-							
+							last_bool_exp = $5;
 							
 							auto last_br = last_br_emit.top();
 							last_br_emit.pop();
@@ -1111,14 +1143,14 @@ Exp :			LPAREN Exp RPAREN
 							
 							$$->truelist = CodeBuffer::instance().merge($1->truelist,$5->truelist);
 							
-							if (if_counter != 0){
+							//if (if_counter != 0){
 								$$->truelist = CodeBuffer::instance().merge($$->truelist,last_br_true); 
-							}
+							//}
 							$$->falselist = $5->falselist;
 							//$$->nextlist = $5->nextlist;
 							
 							
-							if(if_counter == 0){
+							//if(if_counter == 0){
 							
 							
 								string tL, fL;
@@ -1135,7 +1167,7 @@ Exp :			LPAREN Exp RPAREN
 								CodeBuffer::instance().bpatch(last_br_true,tL);
 								CodeBuffer::instance().bpatch(last_br_true,tL);
 								CodeBuffer::instance().bpatch(last_br_true,tL);
-							}
+							//}
 						
 							
 							
@@ -1246,23 +1278,7 @@ Exp :			LPAREN Exp RPAREN
 						};
 						
 						
-checkBoolExp :     Exp {
-						TokenType old1 = $1->type;
-						if($1->type == FUNCTION_t)
-							$1->type = ((Function*) $1)->returnType;
 
-						
-						if($1->type != BOOL_t)
-						{
-							errorMismatch(yylineno);
-							exit(0);
-						}
-						
-						$1->type = old1;
-						last_bool_exp = $1;
-						$$ = $1;
-
-					}
 					
 OPENORMAL:					{
 								symbolTable.openScope(NORMAL);

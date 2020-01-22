@@ -1,15 +1,14 @@
-int fib(byte n) {
-    if (n == 0 or n == 1) return 1;
-    return fib(n-1b) + fib(n-2b);
-}
-
-void main() {
-    byte i = 0b;
-    while (i < 10) {
-        printi(fib(i));
-        if (i+1 < 10)
-            print("*");
-        i = i + 1b;
-    }
-    print("*");
+void main(){	
+	int x = 1;
+	while(x == 3 or x > 1 and x < 3 or x == 1){
+		if(x >= 3){
+			print("3!");
+			break;
+		}
+		printi(x);
+		if(x >= 3){
+			print("why are you still here ?!");
+		}
+		x = x+1;
+	}
 }

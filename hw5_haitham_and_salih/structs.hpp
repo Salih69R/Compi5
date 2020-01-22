@@ -68,11 +68,15 @@ public:
     vector<pair<int,BranchLabelIndex>> truelist;
     vector<pair<int,BranchLabelIndex>> falselist;
 	vector<pair<int,BranchLabelIndex>> nextlist;
+	vector<pair<int,BranchLabelIndex>> breaklist;
+	vector<pair<int,BranchLabelIndex>> continuelist;
 	
 Node( TokenType type, string name = "",string value = "" , string reg = ""):name(name), type(type), value(value), reg(reg) , is_Var(false) {
 	truelist = vector<pair<int,BranchLabelIndex>>();
 	falselist = vector<pair<int,BranchLabelIndex>>();
 	nextlist = vector<pair<int,BranchLabelIndex>>();
+	breaklist = vector<pair<int,BranchLabelIndex>>();
+	continuelist = vector<pair<int,BranchLabelIndex>>();
 };
 
 };

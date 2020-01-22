@@ -1,24 +1,14 @@
-bool func5(bool x) {
+void main(){
 
-
-   return x or not x;
-   // return true;
-       
-    // if(x or not x)
-     //           return true;
-     //   else
-     //           return false;
-
-
-}
-
-void main() {
-
-
-        if (func5(true)) print("true"); else print("false");
-
-
-
-
-
+	int x;
+	byte y = 1 b;
+	while(x <= 10){
+		printi(y);
+		x = x + 1;
+		y = y * 2b;
+	}
+	while(true) {
+		print("end");
+		return;
+	}
 }
