@@ -1026,11 +1026,9 @@ Exp :			LPAREN Exp RPAREN
 							CodeBuffer::instance().bpatch($6->nextlist,$7->reg);
 							CodeBuffer::instance().bpatch(last_br_true,$4->reg);
 							
-							if(if_counter == 0){
-								CodeBuffer::instance().bpatch(last_br_false,$7->reg);
-							}
+					
 							
-							$$ = new Node(BOOL_t , "" ,"",a.RegAlloc());
+							$$ = new Node(BOOL_t , "" ,"",a.Var_Alloc(BOOL_t));
 							$$->is_Var = true;
 							
 							if (!($5->is_Var)){
@@ -1039,7 +1037,7 @@ Exp :			LPAREN Exp RPAREN
 							}
 							
 							//TODO: fix this
-							a.genBool($$,$5);
+							//a.genBool($$,$5);
 							
 							
 							$$->falselist = CodeBuffer::instance().merge($1->falselist,$5->falselist);
@@ -1051,7 +1049,25 @@ Exp :			LPAREN Exp RPAREN
 							$$->truelist = $5->truelist;
 							//$$->nextlist = $5->nextlist;
 						
+								if(if_counter == 0){
 							
+							
+								string tL, fL;
+								int addr = a.genIF($5);
+							
+								$$->value = $$->reg = a.genExpressionFinalResult($$ ,tL, fL );
+								$$->is_Var = false;
+								
+								auto TrueList = CodeBuffer::instance().makelist({addr,FIRST});
+								auto FalseList = CodeBuffer::instance().makelist({addr,SECOND});
+								CodeBuffer::instance().bpatch(TrueList,tL);
+								CodeBuffer::instance().bpatch(FalseList,fL);
+								
+								CodeBuffer::instance().bpatch(last_br_false,fL);
+								CodeBuffer::instance().bpatch(last_br_false,fL);
+								CodeBuffer::instance().bpatch(last_br_false,fL);
+							}
+						
 							
 
 						}
@@ -1074,15 +1090,13 @@ Exp :			LPAREN Exp RPAREN
 							
 							CodeBuffer::instance().bpatch($1->falselist,$4->reg);
 							
-							if (if_counter == 0){
-								CodeBuffer::instance().bpatch(last_br_true,$7->reg);
-							}
+							
 							CodeBuffer::instance().bpatch($6->nextlist,$7->reg);
 							CodeBuffer::instance().bpatch(last_br_false,$4->reg);
 	
 							
 							
-							$$ = new Node(BOOL_t , "" ,"",a.RegAlloc());
+							$$ = new Node(BOOL_t , "" ,"",a.Var_Alloc(BOOL_t));
 							$$->is_Var = true;
 							
 							if (!($5->is_Var)){
@@ -1091,17 +1105,37 @@ Exp :			LPAREN Exp RPAREN
 							}
 							
 							//TODO: fix this
-							a.genBool($$,$5);
-						//	CodeBuffer::instance().emit("r2->reg is " + $5->reg);
+							//a.genBool($$, $5);
+							
 							
 							
 							$$->truelist = CodeBuffer::instance().merge($1->truelist,$5->truelist);
 							
 							if (if_counter != 0){
-							$$->truelist = CodeBuffer::instance().merge($$->truelist,last_br_true); 
+								$$->truelist = CodeBuffer::instance().merge($$->truelist,last_br_true); 
 							}
 							$$->falselist = $5->falselist;
 							//$$->nextlist = $5->nextlist;
+							
+							
+							if(if_counter == 0){
+							
+							
+								string tL, fL;
+								int addr = a.genIF($5);
+							
+								$$->value = $$->reg = a.genExpressionFinalResult($$ ,tL, fL );
+								$$->is_Var = false;
+								
+								auto TrueList = CodeBuffer::instance().makelist({addr,FIRST});
+								auto FalseList = CodeBuffer::instance().makelist({addr,SECOND});
+								CodeBuffer::instance().bpatch(TrueList,tL);
+								CodeBuffer::instance().bpatch(FalseList,fL);
+								
+								CodeBuffer::instance().bpatch(last_br_true,tL);
+								CodeBuffer::instance().bpatch(last_br_true,tL);
+								CodeBuffer::instance().bpatch(last_br_true,tL);
+							}
 						
 							
 							

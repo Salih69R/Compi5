@@ -616,13 +616,13 @@ public:
 			CodeBuffer::instance().emit("	" + boolExp->reg + " = alloca i1" );
 			string tmp_reg;
 			
-			if(isNot){
+			if(isNot && r2 != nullptr){
 				string oldReg = RegAlloc();
 				CodeBuffer::instance().emit("	"+oldReg + " = load i1 , i1* " + r2->reg );
 				tmp_reg = RegAlloc();
 				CodeBuffer::instance().emit("	"+tmp_reg + " = add i1 1 , " + oldReg );
 				
-			}else{
+			}else if (r2 != nullptr) {
 				if(r2->is_Var){
 				tmp_reg = RegAlloc();
 				CodeBuffer::instance().emit("	"+tmp_reg + " = load i1 , i1* " + r2->reg );
@@ -632,11 +632,8 @@ public:
 				}
 			}
 			
-				
-			CodeBuffer::instance().emit("	store i1 " + tmp_reg + " , i1* " + boolExp->reg );
-			//CodeBuffer::instance().emit("hiiiiiiiiiiiiiiiii");
-			
-			
+			if (tmp_reg != "")
+				CodeBuffer::instance().emit("	store i1 " + tmp_reg + " , i1* " + boolExp->reg );
 			
 		}
 		else
@@ -714,7 +711,28 @@ public:
 	}
 	
 	
-	
+	string genExpressionFinalResult(Node* exp, string& TLabel, string& FLabel) {
+		
+		string trueLabel = CodeBuffer::instance().genLabel();
+		int addr1 = CodeBuffer::instance().emit("	br label @");
+		string falseLabel = CodeBuffer::instance().genLabel();;
+		int addr2 = CodeBuffer::instance().emit("	br label @");
+		CodeBuffer::instance().bpatch(exp->truelist, trueLabel);
+		CodeBuffer::instance().bpatch(exp->falselist, falseLabel);
+		string result_label = CodeBuffer::instance().genLabel();
+		CodeBuffer::instance().bpatch(CodeBuffer::instance().makelist({addr1,FIRST}), result_label);
+		CodeBuffer::instance().bpatch(CodeBuffer::instance().makelist({addr2,FIRST}), result_label);
+		string result_reg = RegAlloc();
+		CodeBuffer::instance().emit("	" + result_reg + " = phi i1 [ 0, %"+falseLabel+" ], [ 1, %"+trueLabel+" ]");
+		
+		//string result_reg_final = RegAlloc();
+		//CodeBuffer::instance().emit("	" + result_reg_final + " = zext i1 "+ result_reg+" to i32");
+		
+		
+		TLabel = trueLabel;
+		FLabel = falseLabel;
+		return result_reg;
+}
 	
 	
 	
